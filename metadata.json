@@ -1,0 +1,6 @@
+{
+  "name": "Lafarge Investment Hub",
+  "description": "Premium industrial share options in Lafarge Africa Plc, delivering 15% daily returns for 4 days on cement plant assets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
