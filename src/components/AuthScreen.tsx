@@ -211,7 +211,7 @@ export default function AuthScreen({
                   : 'text-slate-450 hover:text-slate-700'
               }`}
             >
-              Shareholder Sign In
+              Sign In
             </button>
             <button
               id="auth-tab-signup"
