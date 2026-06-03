@@ -219,54 +219,52 @@ export default function ProductCard({
               </div>
 
               {/* Compounding Toggle */}
-              <div className="p-4 bg-green-50/40 border border-green-105 rounded-xl space-y-2">
+              <div className="p-4 bg-green-50/40 border border-green-150 rounded-xl space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-xs text-gray-900 uppercase tracking-wider block">Auto-Rollover Payouts</span>
-                  <label className="relative inline-flex items-center cursor-pointer">
+                  <span className="font-bold text-xs text-green-905 uppercase tracking-wider block">Auto-Rollover Payouts</span>
+                  <label className="relative inline-flex items-center cursor-not-allowed">
                     <input
                       id="checkbox-compound"
                       type="checkbox"
-                      checked={isCompounding}
-                      onChange={(e) => setIsCompounding(e.target.checked)}
+                      checked={true}
+                      disabled={true}
                       className="sr-only peer"
                     />
-                    <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#028A34]"></div>
+                    <div className="w-10 h-6 bg-[#028A34]/30 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all translate-x-0 peer-checked:after:translate-x-full after:translate-x-4 peer-checked:bg-[#028A34] bg-[#028A34]"></div>
                   </label>
                 </div>
-                <p className="text-[11px] text-gray-400 leading-relaxed font-medium">
-                  If activated, daily dividend yields are continuously compounded and re-allocated under high-velocity dry cement development pipelines.
+                <p className="text-[11px] text-gray-500 leading-relaxed font-semibold">
+                  Compounding is <strong className="text-green-800">Always Active</strong> on all Lafarge cement development allocations to guarantee maximum shareholder compound returns.
                 </p>
-                {isCompounding && (
-                  <div className="flex items-center gap-1.5 text-[10px] text-green-800 font-black pt-1 bg-green-100/20 px-2 py-1 rounded">
-                    <Sparkles className="w-3.5 h-3.5 text-green-600 animate-pulse" /> Maximize industrial portfolio compounding rate
-                  </div>
-                )}
+                <div className="flex items-center gap-1.5 text-[10px] text-green-800 font-black pt-1 bg-green-100/20 px-2 py-1 rounded">
+                  <Sparkles className="w-3.5 h-3.5 text-green-600 animate-pulse" /> Rollover Pipeline: Activated and Secured
+                </div>
               </div>
 
               {/* Real-time Forecast Calculations */}
-              <div className="bg-gray-50 border border-gray-150 p-4 rounded-xl space-y-1.5 text-xs text-gray-505 font-medium">
+              <div className="bg-gray-50 border border-gray-150 p-4 rounded-xl space-y-1.5 text-xs text-gray-555 font-semibold">
                 <div className="flex justify-between">
                   <span>Daily Yield Dividends:</span>
                   <strong className="text-green-700">
-                    +{formatNGN(parseFloat(amount || '0') * 0.15)} / Day
+                    +{formatNGN(parseFloat(amount || '0') * 0.10)} / Day
                   </strong>
                 </div>
                 <div className="flex justify-between">
-                  <span>Total Return in 4 Days (Term):</span>
-                  <strong className="text-gray-900">
-                    +{formatNGN(parseFloat(amount || '0') * 0.15 * 4)} (60.0%)
+                  <span>Total Return in {product.termDays} Days (Term):</span>
+                  <strong className="text-gray-900 font-mono">
+                    +{formatNGN(parseFloat(amount || '0') * 0.10 * product.termDays)} ({(10 * product.termDays).toFixed(0)}.0%)
                   </strong>
                 </div>
                 <div className="flex justify-between border-t border-gray-200/50 pt-1.5 mt-1.5">
                   <span>Principal + Profit Paid Back:</span>
-                  <strong className="text-[#028A34] text-sm">
-                    {formatNGN(parseFloat(amount || '0') * 1.60)}
+                  <strong className="text-[#028A34] text-sm font-mono">
+                    {formatNGN(parseFloat(amount || '0') * (1 + 0.10 * product.termDays))}
                   </strong>
                 </div>
-                {isCompounding && (
+                {true && (
                   <div className="flex justify-between border-t border-dashed border-gray-200 mt-2 pt-2 text-[#028A34] font-extrabold text-[12px]">
-                    <span>Expected Compound in 12 Days (3 periods):</span>
-                    <span>{formatNGN(parseFloat(amount || '0') * Math.pow(1.60, 3))}</span>
+                    <span>Expected Compound (3 cycles):</span>
+                    <span className="font-mono">{formatNGN(parseFloat(amount || '0') * Math.pow(1 + 0.10 * product.termDays, 3))}</span>
                   </div>
                 )}
               </div>

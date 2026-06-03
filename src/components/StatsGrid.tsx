@@ -18,9 +18,9 @@ export default function StatsGrid({ wallet, onOpenModal }: StatsGridProps) {
             <Sparkles className="w-5 h-5 animate-pulse" />
           </div>
           <div>
-            <h4 className="font-bold text-gray-900 text-sm md:text-base">15% Daily Dividends Active</h4>
+            <h4 className="font-bold text-gray-900 text-sm md:text-base">10% Daily Dividends Active</h4>
             <p className="text-gray-500 text-xs mt-0.5 max-w-xl">
-              Acquire Lafarge Africa Plc production shares starting at ₦3,000 to generate ₦450 daily dividends for a 4-day term. Fast compounding options live!
+              Acquire Lafarge Africa Plc production shares starting at ₦3,000 to generate 10% daily dividends. Fast compounding options live!
             </p>
           </div>
         </div>
@@ -72,7 +72,7 @@ export default function StatsGrid({ wallet, onOpenModal }: StatsGridProps) {
             <h3 className="text-2xl font-black text-green-800 tracking-tight font-mono">
               {formatNGN(wallet.investedBalance)}
             </h3>
-            <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Earning 15% Daily for 4 Days</p>
+            <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Earning 10% Daily Dividends</p>
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Shield, Landmark, User, Mail, Lock, Gift, HelpCircle, ShieldCheck } from 'lucide-react';
 import { formatNGN } from '../utils';
 import { UserWallet } from '../types';
@@ -25,10 +25,23 @@ export default function AuthScreen({
   const [accountNumber, setAccountNumber] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [referralCode, setReferralCode] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
+
+  // Auto-detect referral code from URL search param or pathname
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const refParam = params.get('ref');
+      if (refParam) {
+        setReferralCode(refParam.trim());
+        setTab('signup');
+      }
+    } catch (e) {}
+  }, []);
 
   const handleSignIn = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,6 +95,11 @@ export default function AuthScreen({
     setErrorMsg('');
     setSuccessMsg('');
 
+    if (!acceptedTerms) {
+      setErrorMsg('You must agree to the Shareholder Terms & Conditions before registering.');
+      return;
+    }
+
     if (!fullName.trim()) {
       setErrorMsg('Please enter your full legal official name.');
       return;
@@ -110,22 +128,26 @@ export default function AuthScreen({
       return;
     }
 
-    // Create a brand new wallet that starts immediately with 500 Welcome Bonus!
+    // Create a brand new wallet that starts empty (0 balance)
+    const cleanNamePart = fullName.trim().split(' ')[0]?.toUpperCase().replace(/[^A-Z]/g, '') || 'MEMBER';
+    const randCode = Math.floor(1000 + Math.random() * 9000);
+    const generatedReferralCode = `LAF-${cleanNamePart}-${randCode}`;
     const newWallet: UserWallet = {
       fullName: fullName.trim(),
       email: signupEmail.trim(),
-      accountNumber: `NG-ACC-${accountNumber}`,
-      walletBalance: 500, // Starts immediately with 500 Welcome Bonus!
+      accountNumber: `NG-ACC-${accountNumber}|${bankName}`,
+      walletBalance: 0, // Fresh shareholder starts with 0 Naira
       investedBalance: 0,
       withdrawnBalance: 0,
-      earnedBalance: 500, // Preloaded with welcome bonus value
-      referralCode: `LAF-${fullName.trim().split(' ')[0]?.toUpperCase() || 'SHARE'}-${Math.floor(100 + Math.random() * 900)}`,
+      earnedBalance: 0,
+      referralCode: generatedReferralCode,
       referralsCount: 0,
       referralEarnings: 0,
-      hasClaimedBonus: true, // Marked claimed instantly
+      hasClaimedBonus: false,
       password: signupPassword,
       isFlagged: false,
-      requireReferralToWithdraw: false
+      requireReferralToWithdraw: false,
+      referredBy: referralCode.trim() || undefined
     };
 
     onRegisterUser(newWallet);
@@ -317,8 +339,8 @@ export default function AuthScreen({
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[10px] uppercase font-black text-slate-550 tracking-wider mb-1.5 flex items-center gap-1">
-                        <Landmark className="w-3.5 h-3.5 text-slate-400" /> Receiving Bank
+                      <label className="block text-[10px] uppercase font-black text-slate-550 tracking-wider mb-1.5 flex items-center gap-1 flex-nowrap truncate">
+                        <Landmark className="w-3.5 h-3.5 text-slate-400 shrink-0" /> Receiving Bank
                       </label>
                       <select
                         id="signup-bank"
@@ -332,6 +354,10 @@ export default function AuthScreen({
                         <option>UBA Plc</option>
                         <option>Fidelity Bank</option>
                         <option>First Bank of Nigeria</option>
+                        <option>OPay</option>
+                        <option>PalmPay</option>
+                        <option>Moniepoint Microfinance</option>
+                        <option>Kuda Bank</option>
                       </select>
                     </div>
                     <div>
@@ -380,10 +406,31 @@ export default function AuthScreen({
                     />
                   </div>
 
+                  {/* Mandatory Terms & Conditions Checkbox */}
+                  <div className="pt-2">
+                    <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        required
+                        checked={acceptedTerms}
+                        onChange={(e) => setAcceptedTerms(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#028A34] focus:ring-[#028A34]"
+                      />
+                      <span className="text-[11px] text-gray-500 font-semibold leading-normal">
+                        I accept the <span className="text-[#028A34] font-bold underline">Shareholder Terms & Conditions</span>, Lafarge Africa investment guidelines, and confirm my bank details are accurate.
+                      </span>
+                    </label>
+                  </div>
+
                   <button
                     id="btn-signup-submit"
                     type="submit"
-                    className="w-full py-3.5 bg-emerald-800 hover:bg-emerald-950 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-emerald-100 mt-2 cursor-pointer flex items-center justify-center gap-1.5"
+                    disabled={!acceptedTerms}
+                    className={`w-full py-3.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-md mt-2 cursor-pointer flex items-center justify-center gap-1.5 ${
+                      acceptedTerms
+                        ? 'bg-emerald-800 hover:bg-emerald-950 text-white shadow-emerald-100'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60'
+                    }`}
                   >
                     Register Profile Ledger (starts with ₦0)
                   </button>

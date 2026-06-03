@@ -165,6 +165,7 @@ export default function DepositWithdrawModal({
     'Moniepoint Microfinance Bank',
     'OPay',
     'PalmPay',
+    'Kuda Bank',
     'Other Bank (Type custom)'
   ];
 

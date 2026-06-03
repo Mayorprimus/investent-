@@ -1,19 +1,24 @@
 import { useState } from 'react';
 import { Sparkles, ArrowRight, TrendingUp } from 'lucide-react';
 import { formatNGN } from '../utils';
+import { productsList } from '../data';
 
 export default function Calculator() {
   const [calcAmount, setCalcAmount] = useState<number>(3000);
-  const [cycles, setCycles] = useState<number>(3); // default 3 cycles (12 days)
+  const [cycles, setCycles] = useState<number>(3); // default 3 cycles
 
-  // Each 4-day cycle delivers 15% daily dividends, summing up to 60.0% returns per cycle term.
-  const returnRatePerCycle = 0.60; 
+  // Find the highest product we qualify for based on simulation amount
+  // Since productsList is sorted from cheapest to most expensive, we filter qualify limit
+  const qualifiedProducts = [...productsList].filter(p => calcAmount >= p.minAmount);
+  const matchingProduct = qualifiedProducts.length > 0 ? qualifiedProducts[qualifiedProducts.length - 1] : productsList[0];
+  const termDays = matchingProduct.termDays;
+  const returnRatePerCycle = 0.10 * termDays; 
   
   // Calculate standard profit
   const standardReturn = calcAmount * returnRatePerCycle * cycles;
   const standardTotal = calcAmount + standardReturn;
 
-  // Calculate compounding profit (1.60^cycles)
+  // Calculate compounding profit ((1 + returnRatePerCycle)^cycles)
   const compoundTotal = calcAmount * Math.pow(1 + returnRatePerCycle, cycles);
   const compoundReturn = compoundTotal - calcAmount;
 
@@ -23,9 +28,9 @@ export default function Calculator() {
       {/* Title */}
       <div>
         <h3 className="text-lg font-bold text-gray-950 font-sans flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-green-600" /> Dividend Growth Calculator
+          <TrendingUp className="w-5 h-5 text-green-605" /> Dividend Growth Calculator
         </h3>
-        <p className="text-xs text-gray-400">Simulate Lafarge stock options growth. Contrast standard withdrawals with the 4-day rolling compounding engine.</p>
+        <p className="text-xs text-gray-400">Simulate Lafarge stock options growth. Contrast standard withdrawals with the dynamic rolling compounding engine.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -58,14 +63,14 @@ export default function Calculator() {
           </div>
 
           <div className="space-y-3">
-            <span className="text-xs text-gray-500 font-bold uppercase tracking-wider block">Simulation Terms (4-day Rolling Cycles)</span>
+            <span className="text-xs text-gray-550 font-bold uppercase tracking-wider block">Simulation Terms ({termDays}-day Rolling Cycles)</span>
             
             <div className="grid grid-cols-4 gap-2">
               {[
-                { label: '4 Days', val: 1 },
-                { label: '12 Days', val: 3 },
-                { label: '20 Days', val: 5 },
-                { label: '40 Days', val: 10 }
+                { label: `${termDays} Days`, val: 1 },
+                { label: `${termDays * 3} Days`, val: 3 },
+                { label: `${termDays * 5} Days`, val: 5 },
+                { label: `${termDays * 10} Days`, val: 10 }
               ].map((item, idx) => (
                 <button
                   key={idx}
@@ -86,18 +91,18 @@ export default function Calculator() {
           </div>
 
           <div className="p-4 bg-green-50/35 border border-green-105 rounded-xl flex items-start gap-3">
-            <Sparkles className="w-5 h-5 text-green-600 shrink-0 mt-0.5 animate-pulse" />
+            <Sparkles className="w-5 h-5 text-green-605 shrink-0 mt-0.5 animate-pulse" />
             <div className="space-y-1">
-              <span className="text-xs font-extrabold text-green-900 uppercase tracking-wide block">Compounding Factor: 1.60x Per Turn</span>
-              <p className="text-[11px] text-gray-450 leading-relaxed font-semibold">
-                By enabling rollover compounding, your 15% daily dividends (₦450 per ₦3,000) are automatically folded back into your holdings. At 60.0% term gain per 4 days, your capital grows geometrically, delivering extreme asset compounding.
+              <span className="text-xs font-extrabold text-green-900 uppercase tracking-wide block font-sans">Compounding Factor: {(1 + returnRatePerCycle).toFixed(2)}x Per Turn</span>
+              <p className="text-[11px] text-gray-450 leading-relaxed font-semibold font-sans">
+                By enabling rollover compounding, your 10% daily dividends are automatically folded back into your holdings. At {(returnRatePerCycle * 100).toFixed(0)}% term gain per {termDays} days, your capital grows geometrically, delivering extreme asset compounding.
               </p>
             </div>
           </div>
         </div>
 
         {/* Results comparisons */}
-        <div className="lg:col-span-15 bg-gray-50/50 border border-slate-100/80 rounded-2xl p-5 space-y-4 lg:col-span-5">
+        <div className="lg:col-span-5 bg-gray-50/50 border border-slate-100/80 rounded-2xl p-5 space-y-4">
           <span className="text-xs font-black text-gray-400 uppercase tracking-widest block border-b border-gray-150 pb-2">Projections</span>
           
           <div className="space-y-3">
@@ -105,7 +110,7 @@ export default function Calculator() {
             <div className="space-y-1">
               <div className="flex justify-between items-baseline">
                 <span className="text-xs text-gray-500 font-bold">Standard Daily Cashouts</span>
-                <span className="text-sm font-extrabold text-gray-805 font-mono">{formatNGN(standardTotal)}</span>
+                <span className="text-sm font-extrabold text-gray-800 font-mono">{formatNGN(standardTotal)}</span>
               </div>
               <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
                 <div 

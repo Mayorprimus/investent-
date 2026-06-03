@@ -13,6 +13,7 @@ export interface UserWallet {
   requireReferralToWithdraw?: boolean;
   hasClaimedBonus?: boolean;
   password?: string;
+  referredBy?: string;
 }
 
 export interface InvestmentProduct {
@@ -21,7 +22,7 @@ export interface InvestmentProduct {
   description: string;
   minAmount: number;
   maxAmount: number;
-  rate: number; // e.g. 0.15 for 15%
+  rate: number; // e.g. 0.10 for 10%
   termDays: number; // e.g. 3
   riskLevel: 'Low' | 'Moderate' | 'High';
   category: string;
@@ -40,6 +41,7 @@ export interface ActiveInvestment {
   expectedReturn: number; // standard 15% return amount
   isCompounding: boolean;
   userEmail?: string;
+  termDays?: number;
 }
 
 export interface Transaction {

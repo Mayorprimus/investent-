@@ -20,7 +20,8 @@ import {
   Check,
   Headphones,
   MessageSquare,
-  Send
+  Send,
+  User
 } from 'lucide-react';
 
 import { ActiveInvestment, UserWallet, Transaction, SupportTicket, DepositAccount } from './types';
@@ -38,9 +39,10 @@ import DepositWithdrawModal from './components/DepositWithdrawModal';
 import RegisterModal from './components/RegisterModal';
 import AdminPortal from './components/AdminPortal';
 import AuthScreen from './components/AuthScreen';
+import ProfileView from './components/ProfileView';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'invest' | 'simulator' | 'faq' | 'cs' | 'admin'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'invest' | 'simulator' | 'faq' | 'cs' | 'admin' | 'profile'>('dashboard');
   const [adminApprovalSettings, setAdminApprovalSettings] = useState({
     requireDepositApproval: true,
     requireInvestmentApproval: true,
@@ -214,12 +216,14 @@ export default function App() {
         productName: 'Calabar Port Bulk Cement Options',
         amountInvested: 30000,
         startDate: Date.now() - 1 * 24 * 60 * 60 * 1000, // 1 day ago
-        endDate: Date.now() + 3 * 24 * 60 * 60 * 1000,    // 3 days left for 4-day cycle
+        endDate: Date.now() + 10 * 24 * 60 * 60 * 1000,   // 10 days left for 11-day cycle
         lastAccrualTime: Date.now() - 1 * 24 * 60 * 60 * 1000,
         status: 'active',
-        totalAccrued: 4500, // ₦4500 daily dividend (15% of ₦30,000) pre-accrued for demonstration!
-        expectedReturn: 18050, // 15% daily * 4 days on 30,000 is 18,000 profit
-        isCompounding: false
+        totalAccrued: 3000, // ₦3000 daily dividend (10% of ₦30,000) pre-accrued for demonstration!
+        expectedReturn: 33000, // 10% daily * 11 days on 30,005 is 33,000 profit
+        isCompounding: true,
+        termDays: 11,
+        userEmail: 'jeremiahobazee11@gmail.com'
       }
     ];
   });
@@ -329,7 +333,7 @@ export default function App() {
       'jeremiahobazee11@gmail.com': [
         {
           sender: 'agent',
-          text: 'Good day! Welcome to Lafarge-Huaxin Africa Client Relations Desk. I am Blessing Adebayo, your dedicated investment advisor today. How may I help you maximize or solve issues regarding your 15% daily dividend packages?',
+          text: 'Good day! Welcome to Lafarge-Huaxin Africa Client Relations Desk. I am Blessing Adebayo, your dedicated investment advisor today. How may I help you maximize or solve issues regarding your 10% daily dividend packages?',
           time: 'Just now'
         }
       ]
@@ -339,7 +343,7 @@ export default function App() {
   const csChatMessages = userChatThreads[wallet.email.toLowerCase()] || [
     {
       sender: 'agent',
-      text: 'Good day! Welcome to Lafarge-Huaxin Africa Client Relations Desk. I am Blessing Adebayo, your dedicated investment advisor today. How may I help you maximize or solve issues regarding your 15% daily dividend packages?',
+      text: 'Good day! Welcome to Lafarge-Huaxin Africa Client Relations Desk. I am Blessing Adebayo, your dedicated investment advisor today. How may I help you maximize or solve issues regarding your 10% daily dividend packages?',
       time: 'Just now'
     }
   ];
@@ -366,7 +370,8 @@ export default function App() {
         status: 'completed',
         date: Date.now() - 1 * 24 * 60 * 60 * 1000,
         reference: 'TX-LAF9086',
-        description: 'Acquired Ewekoro Dry Kiln Share Options'
+        description: 'Acquired Ewekoro Dry Kiln Share Options',
+        userEmail: 'jeremiahobazee11@gmail.com'
       },
       {
         id: 'tx-dividend-claim-prev',
@@ -375,7 +380,8 @@ export default function App() {
         status: 'completed',
         date: Date.now() - 0.5 * 24 * 60 * 60 * 1000,
         reference: 'TX-EARN451',
-        description: 'Withdrew Day 1 Lafarge Stock Dividend'
+        description: 'Withdrew Day 1 Lafarge Stock Dividend',
+        userEmail: 'jeremiahobazee11@gmail.com'
       },
       {
         id: 'tx-initial-deposit',
@@ -384,7 +390,8 @@ export default function App() {
         status: 'completed',
         date: Date.now() - 1.5 * 24 * 60 * 60 * 1000,
         reference: 'TX-ACC-PAYSTACK',
-        description: 'Funded account via paystack gateway'
+        description: 'Funded account via paystack gateway',
+        userEmail: 'jeremiahobazee11@gmail.com'
       }
     ];
   });
@@ -451,10 +458,10 @@ export default function App() {
 
   // Filter user-specific lists so each registered account has their own isolated ledger
   const userTransactions = transactions.filter(
-    (tx) => !tx.userEmail || tx.userEmail.toLowerCase() === (wallet?.email || '').toLowerCase()
+    (tx) => tx.userEmail?.toLowerCase() === (wallet?.email || '').toLowerCase()
   );
   const userActiveInvestments = activeInvestments.filter(
-    (inv) => !inv.userEmail || inv.userEmail.toLowerCase() === (wallet?.email || '').toLowerCase()
+    (inv) => inv.userEmail?.toLowerCase() === (wallet?.email || '').toLowerCase()
   );
   const userActiveCount = userActiveInvestments.filter(i => i.status === 'active').length;
 
@@ -477,13 +484,15 @@ export default function App() {
             userEarnings[email] = 0;
           }
           
+          const termDays = workingInv.termDays || Math.round(workingInv.expectedReturn / (workingInv.amountInvested * 0.10)) || 4;
+          
           while (newTime >= workingInv.endDate) {
-            const cycleProfit = workingInv.amountInvested * 0.15 * 4; // 15% daily for 4 days (60% total)
+            const cycleProfit = workingInv.amountInvested * 0.10 * termDays;
             userEarnings[email] += cycleProfit;
 
             if (workingInv.isCompounding) {
-              // Roll over BOTH principal and profit for next 4 days
-              const newAmountCompounded = workingInv.amountInvested * 1.60;
+              // Roll over BOTH principal and profit for next term cycle
+              const newAmountCompounded = workingInv.amountInvested * (1 + (0.10 * termDays));
               const prevEndDate = workingInv.endDate;
 
               newTransactions.push({
@@ -509,13 +518,14 @@ export default function App() {
               });
 
               workingInv.startDate = prevEndDate;
-              workingInv.endDate = prevEndDate + (4 * 24 * 60 * 60 * 1000); // 4 days
+              workingInv.endDate = prevEndDate + (termDays * 24 * 60 * 60 * 1000); // dynamic days
               workingInv.amountInvested = newAmountCompounded;
+              workingInv.expectedReturn = newAmountCompounded * 0.10 * termDays;
               workingInv.totalAccrued = 0; // reset accrued so far
             } else {
               // Stop compounding. Set to matured, capital goes wait for manual payout claim
               workingInv.status = 'matured';
-              workingInv.totalAccrued = cycleProfit; // fully accrued 60%
+              workingInv.totalAccrued = cycleProfit; // fully accrued 40%-150%
               break;
             }
           }
@@ -524,8 +534,8 @@ export default function App() {
           if (workingInv.status === 'active') {
             const elapsedMs = newTime - workingInv.startDate;
             const elapsedDays = Math.floor(elapsedMs / (24 * 60 * 60 * 1000));
-            const cappedDays = Math.min(4, Math.max(0, elapsedDays));
-            workingInv.totalAccrued = workingInv.amountInvested * 0.15 * cappedDays;
+            const cappedDays = Math.min(termDays, Math.max(0, elapsedDays));
+            workingInv.totalAccrued = workingInv.amountInvested * 0.10 * cappedDays;
           }
 
           return workingInv;
@@ -575,13 +585,14 @@ export default function App() {
       productName: productDef.name,
       amountInvested: amountToDeploy,
       startDate: simulatedTime,
-      endDate: simulatedTime + (4 * 24 * 60 * 60 * 1000), // exactly 4 days
+      endDate: simulatedTime + (productDef.termDays * 24 * 60 * 60 * 1000), // exactly product.termDays
       lastAccrualTime: simulatedTime,
       status: requireApproval ? 'pending' : 'active',
       totalAccrued: 0,
-      expectedReturn: amountToDeploy * 0.15 * 4,
+      expectedReturn: amountToDeploy * 0.10 * productDef.termDays,
       isCompounding,
-      userEmail: wallet.email
+      userEmail: wallet.email,
+      termDays: productDef.termDays
     };
 
     // Update state lists
@@ -613,7 +624,8 @@ export default function App() {
     if (!target) return;
 
     if (target.status === 'matured') {
-      const profit = target.amountInvested * 0.15 * 4;
+      const termDays = target.termDays || Math.round(target.expectedReturn / (target.amountInvested * 0.10)) || 4;
+      const profit = target.expectedReturn || (target.amountInvested * 0.10 * termDays);
       const grossReturn = target.amountInvested + profit;
 
       setActiveInvestments((prev) => 
@@ -975,7 +987,8 @@ export default function App() {
   const [copiedRef, setCopiedRef] = useState(false);
   
   const handleCopyRefLink = () => {
-    navigator.clipboard.writeText(`https://lafareg-invest.com/ref/${wallet.referralCode}`);
+    const refLink = `${window.location.origin}?ref=${wallet.referralCode}`;
+    navigator.clipboard.writeText(refLink);
     setCopiedRef(true);
     setTimeout(() => setCopiedRef(false), 2000);
   };
@@ -1014,24 +1027,28 @@ export default function App() {
     email: string;
     accountNumber: string;
     referralUsed: string;
+    password?: string;
   }) => {
-    const generatedReferralCode = `LAF-${newUser.fullName.split(' ')[0]?.toUpperCase().replace(/[^A-Z]/g, '') || 'MEMBER'}-${Math.floor(100 + Math.random() * 900)}`;
+    const cleanNamePart = newUser.fullName.split(' ')[0]?.toUpperCase().replace(/[^A-Z]/g, '') || 'MEMBER';
+    const randCode = Math.floor(1000 + Math.random() * 9000);
+    const generatedReferralCode = `LAF-${cleanNamePart}-${randCode}`;
     
     const newWallet: UserWallet = {
-      walletBalance: 500, // Starts immediately with 500 Welcome Bonus!
+      walletBalance: 0, // Starts immediately with 0 Naira
       investedBalance: 0,
       withdrawnBalance: 0,
-      earnedBalance: 500, // Preloaded with welcome bonus value
+      earnedBalance: 0,
       accountNumber: newUser.accountNumber,
       fullName: newUser.fullName,
       email: newUser.email,
       referralCode: generatedReferralCode,
       referralsCount: 0,
       referralEarnings: 0,
-      hasClaimedBonus: true, // Marked claimed instantly
-      password: '1234', // Default password for modal signup
+      hasClaimedBonus: false,
+      password: newUser.password || '1234', // Uses the user's custom chosen password
       isFlagged: false,
-      requireReferralToWithdraw: false
+      requireReferralToWithdraw: false,
+      referredBy: newUser.referralUsed || undefined
     };
 
     setWallet(newWallet);
@@ -1049,18 +1066,8 @@ export default function App() {
     // Clear portfolios for new registered user
     setActiveInvestments([]);
 
-    // Clear and record first ledger transaction showing 500 welcome credit status
-    setTransactions([
-      {
-        id: `tx-init-reg-${Math.random().toString(36).substring(2, 9)}`,
-        type: 'deposit',
-        amount: 500,
-        status: 'completed',
-        date: simulatedTime,
-        reference: generateRef(),
-        description: 'Lafarge Shareholder Welcome Booster Bonus Settled'
-      }
-    ]);
+    // Keep transactions completely empty for new registration as requested!
+    // Simply do not call setTransactions or set it to empty for this user.
 
     if (newUser.referralUsed) {
       setReferredByCode(newUser.referralUsed);
@@ -1126,13 +1133,13 @@ export default function App() {
       
       const textLower = inputText.toLowerCase();
       if (textLower.includes('withdr') || textLower.includes('time') || textLower.includes('10am') || textLower.includes('hour') || textLower.includes('limit')) {
-        responseText = "I see you are inquiring about withdrawals! Please remember that all capital and 15% dividend withdrawals are approved between 10:00 AM and 12:00 PM daily. If the simulated time clock shows a different window, you can use the 'Virtual Time Machine' on the dashboard workspace to leap forward instantly and process your payout.";
+        responseText = "I see you are inquiring about withdrawals! Please remember that all capital and 10% dividend withdrawals are approved between 10:00 AM and 12:00 PM daily. If the simulated time clock shows a different window, you can use the 'Virtual Time Machine' on the dashboard workspace to leap forward instantly and process your payout.";
       } else if (textLower.includes('deposit') || textLower.includes('fund') || textLower.includes('paystack') || textLower.includes('pay')) {
         responseText = "Our payment gateway supports secure instant bank deposits. Transfers typically verify within 1 to 5 minutes. If you completed a deposit and are waiting for it to show, please click 'Simulate Referee Deposit' on the dashboard referral card, or contact us with your reference number.";
       } else if (textLower.includes('refer') || textLower.includes('ref') || textLower.includes('bonus') || textLower.includes('friend')) {
         responseText = "For every teammate you refer, you get ₦500.05 instantly. The bonus credits directly to your local wallet balance as soon as your referee starts any Lafarge concrete package investment (minimum ₦3,000). You can test this using the live 'Simulate Referee Deposit' button!";
-      } else if (textLower.includes('comp') || textLower.includes('interest') || textLower.includes('15%')) {
-        responseText = "Lafarge's 15% daily dividend packages roll over for exactly 4 days. If compounding is toggled 'On', both your principal capital and the 60% total profit automatically compound into another 4-day cycle, compounding your returns exponentially!";
+      } else if (textLower.includes('comp') || textLower.includes('interest') || textLower.includes('10%')) {
+        responseText = "Lafarge's 10% daily dividend packages roll over for 15 days down to 6 days depending on the option tier. Both your principal capital and the accrued profits automatically compound into another cycle, compounding your returns exponentially!";
       }
 
       setUserChatThreads(prev => {
@@ -1260,19 +1267,6 @@ export default function App() {
 
   const handleRegisterUser = (newUser: UserWallet) => {
     setRegisteredUsers((prev) => [...prev, newUser]);
-    setTransactions((prevTx) => [
-      {
-        id: `tx-bonus-${Math.random().toString(36).substring(2, 9)}`,
-        type: 'deposit',
-        amount: 500,
-        status: 'completed',
-        date: simulatedTime,
-        reference: generateRef(),
-        description: 'Lafarge Shareholder Welcome Booster Bonus Settled',
-        userEmail: newUser.email
-      },
-      ...prevTx
-    ]);
   };
 
   const handleLoginSuccess = (userWallet: UserWallet, adminStatus: boolean) => {
@@ -1340,6 +1334,7 @@ export default function App() {
                 { name: 'Portfolio View', id: 'dashboard', icon: Landmark },
                 { name: 'Share Products', id: 'invest', icon: Compass },
                 { name: 'Compounding Simulator', id: 'simulator', icon: TrendingUp },
+                { name: 'My Profile', id: 'profile', icon: User },
                 { name: 'Security & FAQs', id: 'faq', icon: HelpCircle },
                 { name: 'Customer Service', id: 'cs', icon: Headphones },
                 { name: 'Admin Portal', id: 'admin', icon: ShieldCheck }
@@ -1419,6 +1414,7 @@ export default function App() {
             { name: 'Portfolio View', id: 'dashboard', icon: Landmark },
             { name: 'Share Products', id: 'invest', icon: Compass },
             { name: 'Compounding Simulator', id: 'simulator', icon: TrendingUp },
+            { name: 'My Profile', id: 'profile', icon: User },
             { name: 'Security & FAQs', id: 'faq', icon: HelpCircle },
             { name: 'Customer Service', id: 'cs', icon: Headphones },
             { name: 'Admin Portal', id: 'admin', icon: ShieldCheck }
@@ -1455,7 +1451,7 @@ export default function App() {
       )}
 
       {/* Primary Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:pb-8 pb-24 flex-1 w-full space-y-8">
         
         {/* Dynamic content render depending on ActiveTab */}
         
@@ -1505,11 +1501,11 @@ export default function App() {
                     <h3 className="font-extrabold text-green-900 text-sm flex flex-wrap items-center gap-2">
                       Lafarge Shareholder Program
                       <span className="px-2 py-0.5 bg-green-150 text-green-800 rounded-md text-[10px] font-black uppercase tracking-wider">
-                        ₦500.00 Welcome Settled
+                        Shareholder Vault Active
                       </span>
                     </h3>
                     <p className="text-xs text-gray-550 leading-relaxed font-semibold">
-                      Congratulations! Your registration booster has been successfully settled on your balance. Allocate these resources into active concrete packages to prompt daily 15% dividends.
+                      Congratulations! Your shareholder wallet is now active. Fund your account and acquire shares or bonds to produce high-performance daily 10% dividends.
                     </p>
                   </div>
                 </div>
@@ -1563,7 +1559,7 @@ export default function App() {
                     <label className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider">Your Referral Link</label>
                     <div className="flex items-center gap-2 p-1.5 bg-gray-50 border border-slate-100 rounded-xl">
                       <code className="text-[11px] font-mono font-medium text-gray-600 truncate flex-1 pl-1">
-                        https://lafareg-invest.com/ref/{wallet.referralCode}
+                        {window.location.origin}?ref={wallet.referralCode}
                       </code>
                       <button
                         onClick={handleCopyRefLink}
@@ -1630,7 +1626,7 @@ export default function App() {
           <div className="space-y-8 animate-fade-in">
             <div className="border-b border-green-150 pb-5">
               <h2 className="text-2xl md:text-3xl font-display font-black text-gray-950 tracking-tight">Cement Production Stock Options</h2>
-              <p className="text-sm text-gray-500 mt-1 max-w-xl">Acquire shares in Nigeria's leading building material assets. Get an immediate 15% daily dividend payoff for a locked 4-day period.</p>
+              <p className="text-sm text-gray-500 mt-1 max-w-xl">Acquire shares in Nigeria's leading building material assets. Get an immediate 10% daily dividend payoff with options ranging from 15 days down to 6 days.</p>
             </div>
 
             {/* Product card matrix */}
@@ -1673,12 +1669,12 @@ export default function App() {
                   a: 'Yes. This simulated share options portal models equity allocations in dry kilns, eco-binders, and quarry processing lines across Ewekoro, Sagamu, Mfamosing, and Ashaka plants, with security and financial controls supported by the Huaxin Cement Group.'
                 },
                 {
-                  q: 'How does the 15% daily dividend payout work?',
-                  a: 'For every day your chosen cement position remains active, you accumulate 15% of your initial position value (e.g., ₦450 daily on ₦3,000 minimum). These yields accumulate in real-time, allowing you to withdraw them daily to your liquid cash balance, or roll them forward compounding up!'
+                  q: 'How does the 10% daily dividend payout work?',
+                  a: 'For every day your chosen cement position remains active, you accumulate 10% of your initial position value (e.g., ₦300 daily on ₦3,000 minimum). These yields accumulate in real-time, allowing you to withdraw them daily to your liquid cash balance, or roll them forward compounding up!'
                 },
                 {
                   q: 'What is the lock-in period for cement shares?',
-                  a: 'Positions are held in 4-day terms. Once the 4 days elapse, the position matures, releasing 100% of your initial capital back into your liquid wallet for manual withdrawal or compounding.'
+                  a: 'Positions are held in specific term cycles (ranging from 15 days for Ewekoro Starter down to 6 days for Expansion Bonds depending on the tier). Once the term elapses, the position matures, releasing 100% of your initial capital back into your liquid wallet for manual withdrawal or compounding.'
                 },
                 {
                   q: 'What are the channels for depositing and withdrawing funds?',
@@ -1777,7 +1773,7 @@ export default function App() {
                   <div className="flex flex-wrap gap-1.5">
                     {[
                       { text: 'Why is withdrawal closed?', search: 'When is withdrawal open?' },
-                      { text: 'Explain 15% Daily return', search: 'How does 15% daily returns work?' },
+                      { text: 'Explain 10% Daily return', search: 'How does 10% daily returns work?' },
                       { text: 'Where is my referral link?', search: 'How do I refer friends to get N500?' },
                       { text: 'How to roll over packages?', search: 'How do I compound?' }
                     ].map((item, idx) => (
@@ -1960,6 +1956,14 @@ export default function App() {
           </div>
         )}
 
+        {activeTab === 'profile' && (
+          <ProfileView
+            wallet={wallet}
+            onUpdateProfile={handleUpdateUserWalletByAdmin}
+            simulatedTime={simulatedTime}
+          />
+        )}
+
          {activeTab === 'admin' && (
           <AdminPortal
             transactions={transactions}
@@ -2011,9 +2015,44 @@ export default function App() {
       />
 
       {/* Footer */}
-      <footer className="bg-white border-t border-green-105 py-6 text-center text-xs text-gray-400 font-bold mt-auto shrink-0 uppercase tracking-widest">
+      <footer className="bg-white border-t border-green-105 py-6 text-center text-xs text-gray-400 font-bold mt-auto pb-24 md:pb-6 shrink-0 uppercase tracking-widest">
         &copy; {new Date().getFullYear()} Lafarge Africa Plc. Controlled by Huaxin Cement Group. All options are fully collateralized.
       </footer>
+
+      {/* Dynamic Mobile Bottom Navigation Bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-green-105 z-50 px-2 py-3 shadow-[0_-8px_30px_rgb(0,0,0,0.06)] flex justify-around items-center">
+        {[
+          { name: 'Portfolio', id: 'dashboard', icon: Landmark },
+          { name: 'Shares', id: 'invest', icon: Compass },
+          { name: 'Simulator', id: 'simulator', icon: TrendingUp },
+          { name: 'Profile', id: 'profile', icon: User },
+          { name: 'Support', id: 'cs', icon: Headphones },
+          ...(isAdmin ? [{ name: 'Admin', id: 'admin', icon: ShieldCheck }] : [])
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              id={`mobile-tab-${tab.id}`}
+              onClick={() => {
+                setActiveTab(tab.id as any);
+                setIsMobileMenuOpen(false);
+              }}
+              className={`flex flex-col items-center gap-1 py-0.5 px-3 rounded-xl transition-all cursor-pointer ${
+                isActive 
+                  ? 'text-[#028A34]' 
+                  : 'text-gray-400 hover:text-gray-700'
+              }`}
+            >
+              <Icon className={`w-5 h-5 transition-transform ${isActive ? 'text-[#028A34] scale-110' : 'text-gray-450'}`} />
+              <span className={`text-[9px] uppercase tracking-wider font-extrabold whitespace-nowrap ${isActive ? 'text-[#028A34]' : 'text-gray-400'}`}>
+                {tab.name}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
     </div>
   );

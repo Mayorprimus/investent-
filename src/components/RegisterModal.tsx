@@ -11,6 +11,7 @@ interface RegisterModalProps {
     email: string;
     accountNumber: string;
     referralUsed: string;
+    password?: string;
   }) => void;
 }
 
@@ -28,12 +29,18 @@ export default function RegisterModal({
   const [referralCode, setReferralCode] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
+
+    if (!acceptedTerms) {
+      setErrorMsg('You must read and accept the Shareholder Terms & Conditions before registering.');
+      return;
+    }
 
     if (!fullName.trim()) {
       setErrorMsg('Please enter your full official name.');
@@ -58,8 +65,9 @@ export default function RegisterModal({
       onRegisterSuccess({
         fullName: fullName.trim(),
         email: email.trim(),
-        accountNumber: `NG-ACC-${accountNumber}`,
-        referralUsed: referralCode.trim()
+        accountNumber: `NG-ACC-${accountNumber}|${bankName}`,
+        referralUsed: referralCode.trim(),
+        password: password.trim()
       });
       setIsSuccess(false);
       onClose();
@@ -184,6 +192,10 @@ export default function RegisterModal({
                       <option>UBA Plc</option>
                       <option>Fidelity Bank</option>
                       <option>First Bank of Nigeria</option>
+                      <option>OPay</option>
+                      <option>PalmPay</option>
+                      <option>Moniepoint Microfinance</option>
+                      <option>Kuda Bank</option>
                     </select>
                   </div>
                   <div>
@@ -223,7 +235,7 @@ export default function RegisterModal({
                     <label className="block text-[10px] uppercase font-black text-gray-400 tracking-wider flex items-center gap-1">
                       Referral Code <span className="text-[9px] text-green-700 italic font-black">(Optional)</span>
                     </label>
-                    <span className="text-[9px] text-gray-400 font-bold" title="Entering a referral code grants ₦500 to the referrer">What is this?</span>
+                    <span className="text-[9px] text-gray-400 font-bold" title="Entering a referral code grants ₦505 to the referrer">What is this?</span>
                   </div>
                   <input
                     type="text"
@@ -234,9 +246,25 @@ export default function RegisterModal({
                   />
                   {referralCode.trim() && (
                     <div className="mt-1.5 p-2 bg-green-50/50 rounded-lg text-[10px] text-[#028A34] font-bold flex gap-1 items-center">
-                      <CheckCircle className="w-3.5 h-3.5 shrink-0" /> Code format logged. Referrer will receive ₦500 bonus reward upon your deposits.
+                      <CheckCircle className="w-3.5 h-3.5 shrink-0" /> Code format logged. Referrer will receive rewards upon your deposits.
                     </div>
                   )}
+                </div>
+
+                {/* Mandatory Terms & Conditions Checkbox */}
+                <div className="pt-2">
+                  <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      required
+                      checked={acceptedTerms}
+                      onChange={(e) => setAcceptedTerms(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#028A34] focus:ring-[#028A34]"
+                    />
+                    <span className="text-[10px] text-gray-500 font-semibold leading-snug">
+                      I accept the <span className="text-[#028A34] font-bold underline">Shareholder Terms & Conditions</span>, Lafarge Africa investment guidelines, and confirm my bank details are accurate.
+                    </span>
+                  </label>
                 </div>
 
               </div>
@@ -244,9 +272,14 @@ export default function RegisterModal({
               {/* Action Button */}
               <button
                 type="submit"
-                className="w-full py-3 bg-[#028A34] hover:bg-green-800 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-green-150 mt-2 cursor-pointer flex items-center justify-center gap-1.5"
+                disabled={!acceptedTerms}
+                className={`w-full py-3 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-md mt-2 cursor-pointer flex items-center justify-center gap-1.5 ${
+                  acceptedTerms 
+                    ? 'bg-[#028A34] hover:bg-green-800 shadow-green-150' 
+                    : 'bg-gray-300 shadow-none cursor-not-allowed opacity-60'
+                }`}
               >
-                Create Account & Claim ₦500.00 Welcome Credit
+                Create Shareholder Account & Activate Vault
               </button>
             </form>
           )}
