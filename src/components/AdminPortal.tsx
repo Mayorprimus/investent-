@@ -23,10 +23,11 @@ import {
   Send,
   User,
   ToggleRight,
-  Eye
+  Eye,
+  Gift
 } from 'lucide-react';
 import { formatNGN } from '../utils';
-import { Transaction, ActiveInvestment, UserWallet, SupportTicket, DepositAccount } from '../types';
+import { Transaction, ActiveInvestment, UserWallet, SupportTicket, DepositAccount, ReferralRelationship } from '../types';
 
 interface CsChatMsg {
   sender: 'user' | 'agent' | 'admin';
@@ -73,6 +74,9 @@ interface AdminPortalProps {
   // Direct Live Chat thread mapping
   userChatThreads: Record<string, CsChatMsg[]>;
   onSendAdminChat: (userEmail: string, text: string, role: 'admin' | 'agent') => void;
+  referralsList: ReferralRelationship[];
+  onApproveReferral: (refId: string) => void;
+  onDeclineReferral: (refId: string) => void;
 }
 
 export default function AdminPortal({
@@ -99,7 +103,10 @@ export default function AdminPortal({
   onReplyToTicket,
   onUpdateTicketStatus,
   userChatThreads,
-  onSendAdminChat
+  onSendAdminChat,
+  referralsList,
+  onApproveReferral,
+  onDeclineReferral
 }: AdminPortalProps) {
   // Authentication states
   const [email, setEmail] = useState('');
@@ -110,7 +117,11 @@ export default function AdminPortal({
   const [loginError, setLoginError] = useState('');
 
   // Tab state inside admin portal
-  const [adminTab, setAdminTab] = useState<'overview' | 'deposits' | 'withdrawals' | 'investments' | 'settings' | 'cs' | 'deposit-accounts'>('overview');
+  const [adminTab, setAdminTab] = useState<'overview' | 'users' | 'deposits' | 'withdrawals' | 'investments' | 'settings' | 'cs' | 'deposit-accounts' | 'referrals'>('overview');
+
+  // Shareholders directory state
+  const [shareholderSearch, setShareholderSearch] = useState('');
+  const [shareholderFilter, setShareholderFilter] = useState<'all' | 'active' | 'flagged'>('all');
 
   // Input editing states to manipulate user balances directly (for simulation and testing)
   const [editBalance, setEditBalance] = useState('');
@@ -296,9 +307,11 @@ export default function AdminPortal({
       <div className="flex flex-wrap gap-2 border-b border-gray-105 pb-px">
         {[
           { id: 'overview', name: 'Executive Overview', count: 0, icon: Landmark },
+          { id: 'users', name: 'Shareholders Directory', count: registeredUsers.length, icon: Users },
           { id: 'deposits', name: 'Deposit Approvals', count: pendingDeposits.length, icon: Coins },
           { id: 'investments', name: 'Package Allocations', count: pendingInvestments.length, icon: TrendingUp },
           { id: 'withdrawals', name: 'Withdrawal Approvals', count: pendingWithdrawals.length, icon: DollarSign },
+          { id: 'referrals', name: 'Referral Approvals', count: referralsList ? referralsList.filter(r => r.status === 'pending').length : 0, icon: Gift },
           { id: 'cs', name: 'Live Message Desk', count: csTickets.filter(t => t.status === 'pending').length, icon: Headphones },
           { id: 'deposit-accounts', name: 'Deposit Escrow Channels', count: depositAccounts ? depositAccounts.filter(a => a.isActive).length : 0, icon: Landmark },
           { id: 'settings', name: 'Policy Rules', count: 0, icon: Sliders }
@@ -392,9 +405,12 @@ export default function AdminPortal({
                   }}
                   className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold focus:outline-none focus:bg-white focus:border-green-600 transition-colors cursor-pointer"
                 >
+                  <option value="admin1234@gmail.com">
+                    Corporate Admin (admin1234@gmail.com) • (Admin Office)
+                  </option>
                   {registeredUsers.map((user) => (
                     <option key={user.email} value={user.email}>
-                      {user.fullName} ({user.email}) {user.email === 'admin1234@gmail.com' ? '• (Admin Office)' : ''}
+                      {user.fullName} ({user.email})
                     </option>
                   ))}
                 </select>
@@ -470,6 +486,24 @@ export default function AdminPortal({
                       className="sr-only peer"
                     />
                     <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                  </label>
+                </div>
+
+                {/* Override 3: Require Referral to Deposit to Withdraw */}
+                <div className="flex items-center justify-between p-3 bg-indigo-50/50 border border-indigo-100 rounded-xl">
+                  <div>
+                    <span className="text-xs font-bold text-indigo-950 block">Require Referral Deposit</span>
+                    <span className="text-[10px] text-gray-400 block font-medium">A referral must deposit for them to withdraw</span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      id="checkbox-require-ref-deposit-withdraw"
+                      type="checkbox"
+                      checked={!!wallet.requireReferralDepositToWithdraw}
+                      onChange={(e) => onUpdateUserWallet({ requireReferralDepositToWithdraw: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                   </label>
                 </div>
               </div>
@@ -603,6 +637,220 @@ export default function AdminPortal({
             </div>
 
           </div>
+        </div>
+      )}
+
+      {/* Shareholders directory view */}
+      {adminTab === 'users' && (
+        <div className="space-y-6 animate-fade-in" id="admin-shareholders-directory">
+          <div className="bg-white border border-gray-150 rounded-2xl p-5 md:p-6 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-gray-105">
+              <div>
+                <h3 className="text-lg font-bold text-gray-950 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-[#028A34]" /> Shareholders Directory
+                </h3>
+                <p className="text-xs text-gray-400 font-medium font-sans">Verify credentials, review active wallets, manage status overrides, or search accounts for the live platform.</p>
+              </div>
+              <span className="text-[10px] font-black uppercase text-green-800 bg-green-50 border border-green-150 px-2.5 py-1 rounded-md self-start sm:self-center font-mono">
+                {registeredUsers.length} total shareholders
+              </span>
+            </div>
+
+            {/* Filter and Search Box */}
+            <div className="flex flex-col md:flex-row gap-3">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  placeholder="Query by Name, Email address or Account Code..."
+                  value={shareholderSearch}
+                  onChange={(e) => setShareholderSearch(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-green-600 focus:bg-white bg-slate-50 transition-colors"
+                />
+                <User className="absolute left-3.5 top-2.5 w-3.5 h-3.5 text-gray-400" />
+              </div>
+              
+              <div className="flex gap-2">
+                {(['all', 'active', 'flagged'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setShareholderFilter(mode)}
+                    className={`px-3 py-1.5 border rounded-xl text-[10px] uppercase font-black tracking-wider transition-all cursor-pointer ${
+                      shareholderFilter === mode
+                        ? 'bg-zinc-900 border-zinc-900 text-white shadow-sm'
+                        : 'bg-white border-gray-200 text-gray-500 hover:bg-slate-50'
+                    }`}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Shareholders Grid / List */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse font-sans text-xs">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-slate-50 text-[10px] uppercase font-black text-gray-400">
+                    <th className="py-3 px-4">Account Holder</th>
+                    <th className="py-3 px-4">Direct Banking Ledger (NUBAN)</th>
+                    <th className="py-3 px-4 text-right">Wallet Capital</th>
+                    <th className="py-3 px-4 text-right">In Share Packs</th>
+                    <th className="py-3 px-4 text-right">Cum. Payouts</th>
+                    <th className="py-3 px-4 text-center">Security Status</th>
+                    <th className="py-3 px-4 text-center">Platform Control</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {registeredUsers
+                    .filter((u) => {
+                      const query = shareholderSearch.toLowerCase().trim();
+                      const matchQuery = !query || u.fullName.toLowerCase().includes(query) || u.email.toLowerCase().includes(query) || (u.accountNumber && u.accountNumber.toLowerCase().includes(query));
+                      const matchFilter = shareholderFilter === 'all' || 
+                                          (shareholderFilter === 'active' && !u.isFlagged) || 
+                                          (shareholderFilter === 'flagged' && u.isFlagged);
+                      return matchQuery && matchFilter;
+                    })
+                    .map((usr) => {
+                      const isCurrentlyManaged = wallet.email.toLowerCase() === usr.email.toLowerCase();
+                      return (
+                        <tr key={usr.email} className={`hover:bg-slate-50/50 transition-colors ${isCurrentlyManaged ? 'bg-green-50/20' : ''}`}>
+                          <td className="py-3.5 px-4 space-y-0.5">
+                            <span className="font-extrabold text-slate-900 text-xs block">{usr.fullName}</span>
+                            <span className="font-medium text-gray-400 text-[10px] lowercase font-mono block">{usr.email}</span>
+                            {usr.referredBy && (
+                              <span className="text-[9px] uppercase font-bold text-emerald-800 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-150 inline-block font-mono">Ref code: {usr.referralCode}</span>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 space-y-0.5 font-semibold text-slate-700">
+                            <span className="font-mono block text-xs">{usr.accountNumber ? usr.accountNumber.split('|')[0] : 'N/A'}</span>
+                            <span className="text-[10px] text-gray-400 block uppercase tracking-wider">{usr.accountNumber ? usr.accountNumber.split('|')[1] || 'Main Bank' : 'N/A'}</span>
+                          </td>
+                          <td className="py-3.5 px-4 text-right font-black font-mono text-[#028A34] text-xs">
+                            {formatNGN(usr.walletBalance)}
+                          </td>
+                          <td className="py-3.5 px-4 text-right font-bold font-mono text-amber-700 text-xs">
+                            {formatNGN(usr.investedBalance || 0)}
+                          </td>
+                          <td className="py-3.5 px-4 text-right font-bold font-mono text-rose-700 text-xs">
+                            {formatNGN(usr.withdrawnBalance || 0)}
+                          </td>
+                          <td className="py-3.5 px-4 text-center">
+                            <span className={`text-[9px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full ${
+                              usr.isFlagged
+                                ? 'bg-rose-100 text-rose-800'
+                                : 'bg-green-100 text-green-800'
+                            }`}>
+                              {usr.isFlagged ? '🔴 FROZEN' : '🟢 ACTIVE'}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <div className="flex gap-2 justify-center">
+                              <button
+                                onClick={() => {
+                                  onSelectUser(usr.email);
+                                  setAdminTab('overview');
+                                }}
+                                className={`px-2.5 py-1 text-[10px] uppercase font-black rounded-lg transition-all border cursor-pointer ${
+                                  isCurrentlyManaged
+                                    ? 'bg-[#028A34] border-[#028A34] text-white'
+                                    : 'bg-white border-gray-200 text-gray-600 hover:bg-slate-50'
+                                }`}
+                              >
+                                {isCurrentlyManaged ? 'Active Override' : 'Override Balance'}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+              {registeredUsers.filter((u) => {
+                const query = shareholderSearch.toLowerCase().trim();
+                const matchQuery = !query || u.fullName.toLowerCase().includes(query) || u.email.toLowerCase().includes(query) || (u.accountNumber && u.accountNumber.toLowerCase().includes(query));
+                const matchFilter = shareholderFilter === 'all' || 
+                                    (shareholderFilter === 'active' && !u.isFlagged) || 
+                                    (shareholderFilter === 'flagged' && u.isFlagged);
+                return matchQuery && matchFilter;
+              }).length === 0 && (
+                <div className="text-center py-12 px-6 max-w-sm mx-auto space-y-1">
+                  <Users className="w-8 h-8 text-gray-350 block mx-auto text-center" />
+                  <h4 className="font-bold text-gray-900 text-xs">No shareholders match search filters</h4>
+                  <p className="text-[10px] text-gray-400">Try checking spelling or adjusting Active/Flagged filters.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Referrals Tab Queue */}
+      {adminTab === 'referrals' && (
+        <div className="bg-white border border-gray-150 rounded-2xl p-5 md:p-6 shadow-sm space-y-6 animate-fade-in" id="admin-referrals-tab">
+          <div>
+            <h3 className="text-lg font-bold text-gray-950">Referral Program Auditing</h3>
+            <p className="text-xs text-gray-400 font-medium font-sans">Verify promotional signup referrals. Approving a referral will credit the respective referrer with their ₦500.00 booster reward.</p>
+          </div>
+
+          {!referralsList || referralsList.length === 0 ? (
+            <div className="text-center py-12 px-6 max-w-sm mx-auto space-y-2">
+              <Gift className="w-10 h-10 text-emerald-600 block mx-auto animate-pulse" />
+              <h4 className="font-bold text-gray-900 text-sm">No referrals tracked yet</h4>
+              <p className="text-xs text-gray-400 font-sans">Any brand-new signups containing specified active promo codes will register here for supervisor review.</p>
+            </div>
+          ) : (
+            <div className="space-y-4 divide-y divide-gray-100">
+              {referralsList.map((ref) => (
+                <div key={ref.id} className="pt-4 first:pt-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 font-sans text-xs">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-50 border border-amber-150 text-amber-700 rounded-md">
+                        REWARD: ₦{formatNGN(ref.amount)}
+                      </span>
+                      <span className={`text-[9px] uppercase font-black px-2 py-0.5 rounded-md tracking-wider border ${
+                        ref.status === 'approved' 
+                          ? 'bg-green-50 text-green-700 border-green-150' 
+                          : ref.status === 'rejected'
+                          ? 'bg-red-50 text-red-650 border-red-150'
+                          : 'bg-yellow-50 text-yellow-750 border-yellow-150 animate-pulse'
+                      }`}>
+                        {ref.status}
+                      </span>
+                      <span className="text-[10px] text-gray-400 font-mono">ID: {ref.id}</span>
+                    </div>
+
+                    <div className="space-y-0.5 text-gray-600 font-semibold text-[11px]">
+                      <p>
+                        Referrer Email: <strong className="text-gray-900 font-bold">{ref.referrerEmail}</strong>
+                        <span className="ml-1 font-mono text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-500 font-bold">[{ref.referrerCode}]</span>
+                      </p>
+                      <p>
+                        Referred Sign-up: <strong className="text-green-700 font-extrabold">{ref.referredName}</strong> ({ref.referredEmail})
+                      </p>
+                      <p className="text-[10px] text-gray-400 font-mono font-bold leading-none mt-1">Date Registered: {new Date(ref.date).toLocaleString()}</p>
+                    </div>
+                  </div>
+
+                  {ref.status === 'pending' && (
+                    <div className="flex items-center gap-2 w-full md:w-auto self-end md:self-center shrink-0">
+                      <button
+                        onClick={() => onDeclineReferral(ref.id)}
+                        className="flex-1 md:flex-initial px-4 py-2 bg-red-50 hover:bg-red-100 border border-red-150 text-red-700 hover:text-red-950 rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5"
+                      >
+                        <XCircle className="w-4 h-4" /> Reject referral
+                      </button>
+                      <button
+                        onClick={() => onApproveReferral(ref.id)}
+                        className="flex-1 md:flex-initial px-5 py-2.5 bg-[#028A34] hover:bg-green-800 text-white rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-green-150"
+                      >
+                        <CheckCircle className="w-4 h-4" /> Approve & Credit Row
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -790,68 +1038,68 @@ export default function AdminPortal({
           <div className="space-y-4">
             
             {/* Setting 1: Deposits Rule */}
-            <div className="flex items-center justify-between p-4 border border-gray-150 rounded-2xl">
+            <div className="flex items-center justify-between p-4 border border-emerald-150 bg-emerald-50/20 rounded-2xl">
               <div className="space-y-0.5 max-w-sm sm:max-w-md pr-4">
-                <span className="text-xs font-black text-gray-950 block">Require Strict Deposit Approval</span>
-                <p className="text-[11px] text-gray-400 font-medium leading-normal">
-                  If toggled <strong className="text-green-700 font-bold uppercase">On</strong>, Paystack or wire deposits will go into a pending queue rather than being instantly credited. Superusers must verify receipts manually here.
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-gray-950 block">Require Strict Deposit Approval</span>
+                  <span className="text-[9px] uppercase font-bold text-white bg-[#028A34] px-2 py-0.5 rounded-full font-mono">Enforced Live Policy</span>
+                </div>
+                <p className="text-[11px] text-gray-500 font-semibold leading-normal">
+                  All Paystack and bank transfer deposits go into the pending queue. Corporate supervisors must verify receipts manually. This rule is locked to guarantee platform audit compliance.
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer shrink-0">
                 <input
                   type="checkbox"
-                  checked={adminApprovalSettings.requireDepositApproval}
-                  onChange={(e) => onSaveSettings({
-                    ...adminApprovalSettings,
-                    requireDepositApproval: e.target.checked
-                  })}
+                  checked={true}
+                  disabled={true}
                   className="sr-only peer"
                 />
-                <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#028A34]"></div>
+                <div className="w-10 h-6 bg-[#028A34] rounded-full after:translate-x-full after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
               </label>
             </div>
 
             {/* Setting 2: Investments Rule */}
-            <div className="flex items-center justify-between p-4 border border-gray-150 rounded-2xl">
+            <div className="flex items-center justify-between p-4 border border-emerald-150 bg-emerald-50/20 rounded-2xl">
               <div className="space-y-0.5 max-w-sm sm:max-w-md pr-4">
-                <span className="text-xs font-black text-gray-950 block">Require Share Allocation Approval</span>
-                <p className="text-[11px] text-gray-400 font-medium leading-normal">
-                  If toggled <strong className="text-green-700 font-bold uppercase">On</strong>, newly acquired investment packages must be underwritten in supervisor controls before accruing interest.
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-gray-950 block">Require Share Allocation Approval</span>
+                  <span className="text-[9px] uppercase font-bold text-white bg-[#028A34] px-2 py-0.5 rounded-full font-mono">Enforced Live Policy</span>
+                </div>
+                <p className="text-[11px] text-gray-500 font-semibold leading-normal">
+                  Newly acquired investment packages must be manually underwritten by a corporate supervisor before acquiring active interest yields. This rule is locked to guarantee platform audit compliance.
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer shrink-0">
                 <input
                   type="checkbox"
-                  checked={adminApprovalSettings.requireInvestmentApproval}
-                  onChange={(e) => onSaveSettings({
-                    ...adminApprovalSettings,
-                    requireInvestmentApproval: e.target.checked
-                  })}
+                  checked={true}
+                  disabled={true}
                   className="sr-only peer"
                 />
-                <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#028A34]"></div>
+                <div className="w-10 h-6 bg-[#028A34] rounded-full after:translate-x-full after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
               </label>
             </div>
 
             {/* Setting 3: Withdrawal Rule */}
-            <div className="flex items-center justify-between p-4 border border-gray-150 rounded-2xl">
+            <div className="flex items-center justify-between p-4 border border-emerald-150 bg-emerald-50/20 rounded-2xl">
               <div className="space-y-0.5 max-w-sm sm:max-w-md pr-4">
-                <span className="text-xs font-black text-gray-950 block">Require Strict Payout Withdrawal Review</span>
-                <p className="text-[11px] text-gray-400 font-medium leading-normal">
-                  If toggled <strong className="text-green-700 font-bold uppercase">On</strong>, user bank payout claims will not clear instantly. They are parked here pending corporate audit confirmation.
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-gray-950 block">Require Strict Payout Withdrawal Review</span>
+                  <span className="text-[9px] uppercase font-bold text-white bg-[#028A34] px-2 py-0.5 rounded-full font-mono">Enforced Live Policy</span>
+                </div>
+                <p className="text-[11px] text-gray-500 font-semibold leading-normal">
+                  All bank withdrawal payout claims are parked under pending queues for direct supervision reviews. They will never fire or clear instantly to secure institutional transparency.
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer shrink-0">
                 <input
                   type="checkbox"
-                  checked={adminApprovalSettings.requireWithdrawalApproval}
-                  onChange={(e) => onSaveSettings({
-                    ...adminApprovalSettings,
-                    requireWithdrawalApproval: e.target.checked
-                  })}
+                  checked={true}
+                  disabled={true}
                   className="sr-only peer"
                 />
-                <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#028A34]"></div>
+                <div className="w-10 h-6 bg-[#028A34] rounded-full after:translate-x-full after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
               </label>
             </div>
 

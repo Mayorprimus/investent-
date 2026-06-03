@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, CheckCircle, Smartphone, Landmark, Wallet, AlertCircle, ArrowUpRight, ArrowDownLeft, Copy, Check } from 'lucide-react';
 import { formatNGN, generateRef } from '../utils';
-import { UserWallet, DepositAccount } from '../types';
+import { UserWallet, DepositAccount, Transaction } from '../types';
 
 interface DepositWithdrawModalProps {
   isOpen: boolean;
@@ -12,6 +12,8 @@ interface DepositWithdrawModalProps {
   simulatedTime: number;
   wallet: UserWallet;
   depositAccounts: DepositAccount[];
+  registeredUsers?: UserWallet[];
+  transactions?: Transaction[];
 }
 
 export default function DepositWithdrawModal({
@@ -22,7 +24,9 @@ export default function DepositWithdrawModal({
   onConfirm,
   simulatedTime,
   wallet,
-  depositAccounts
+  depositAccounts,
+  registeredUsers = [],
+  transactions = []
 }: DepositWithdrawModalProps) {
   const [amount, setAmount] = useState<string>('');
   const [method, setMethod] = useState<'bank' | 'card' | 'crypto'>('bank');
@@ -68,6 +72,27 @@ export default function DepositWithdrawModal({
       if (wallet.requireReferralToWithdraw && wallet.referralsCount < 1) {
         setErrorMessage("Withdrawal Blocked: Shareholder program policies currently place a strict 1-Referral minimum rule on your account. Please invite at least 1 associate or simulation participant to join Lafarge sharing options before requesting a payout.");
         return false;
+      }
+
+      if (wallet.requireReferralDepositToWithdraw) {
+        // Find users referred by this user
+        const referredUsers = registeredUsers.filter(u => 
+          u.referredBy?.trim().toLowerCase() === wallet.referralCode?.trim().toLowerCase()
+        );
+
+        // Check if any of these referred users has any completed deposit transaction
+        const anyReferralDeposited = referredUsers.some(u => 
+          transactions.some(tx => 
+            tx.userEmail?.toLowerCase() === u.email.toLowerCase() && 
+            tx.type === 'deposit' && 
+            tx.status === 'completed'
+          )
+        );
+
+        if (!anyReferralDeposited) {
+          setErrorMessage("Withdrawal Blocked: Your account profile requires a Referral Deposit Verification. To verify authentic invite growth, at least one user you referred must fund their Lafarge account with an active deposit before you can submit a withdrawal.");
+          return false;
+        }
       }
 
       const simulatedDate = new Date(simulatedTime);

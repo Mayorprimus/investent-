@@ -11,6 +11,7 @@ export interface UserWallet {
   referralEarnings: number;
   isFlagged?: boolean;
   requireReferralToWithdraw?: boolean;
+  requireReferralDepositToWithdraw?: boolean;
   hasClaimedBonus?: boolean;
   password?: string;
   referredBy?: string;
@@ -80,4 +81,15 @@ export interface DepositAccount {
   accountName: string;
   accountNumber: string;
   isActive: boolean;
+}
+
+export interface ReferralRelationship {
+  id: string;
+  referrerEmail: string;
+  referrerCode: string;
+  referredEmail: string;
+  referredName: string;
+  amount: number;
+  status: 'pending' | 'approved' | 'rejected';
+  date: number;
 }

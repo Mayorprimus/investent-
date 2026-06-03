@@ -24,7 +24,7 @@ import {
   User
 } from 'lucide-react';
 
-import { ActiveInvestment, UserWallet, Transaction, SupportTicket, DepositAccount } from './types';
+import { ActiveInvestment, UserWallet, Transaction, SupportTicket, DepositAccount, ReferralRelationship } from './types';
 import { productsList } from './data';
 import { formatNGN, generateRef } from './utils';
 
@@ -60,6 +60,49 @@ export default function App() {
   const [referredByCode, setReferredByCode] = useState(() => {
     return localStorage.getItem('lafarge_referred_by_code') || '';
   });
+
+  const [referrals, setReferrals] = useState<ReferralRelationship[]>(() => {
+    const saved = localStorage.getItem('lafarge_referrals');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+      } catch (e) {}
+    }
+    return [];
+  });
+
+  const checkAndRecordReferral = (referredUser: UserWallet, currentUsers: UserWallet[]) => {
+    const rawRefCode = referredUser.referredBy;
+    if (rawRefCode) {
+      const referrer = currentUsers.find(
+        (u) => u.referralCode.trim().toLowerCase() === rawRefCode.trim().toLowerCase()
+      );
+      if (referrer) {
+        setReferrals((prev) => {
+          const alreadyExists = prev.some(
+            (r) => r.referredEmail.toLowerCase() === referredUser.email.toLowerCase()
+          );
+          if (!alreadyExists) {
+            const refObj: ReferralRelationship = {
+              id: `ref-${Math.random().toString(36).substring(2, 9)}`,
+              referrerEmail: referrer.email,
+              referrerCode: referrer.referralCode,
+              referredEmail: referredUser.email,
+              referredName: referredUser.fullName,
+              amount: 500, // ₦500 referral reward
+              status: 'pending',
+              date: Date.now()
+            };
+            return [refObj, ...prev];
+          }
+          return prev;
+        });
+      }
+    }
+  };
 
   // Local state of registered shareholder accounts stored in persistent DB storage
   const [registeredUsers, setRegisteredUsers] = useState<UserWallet[]>(() => {
@@ -426,6 +469,10 @@ export default function App() {
   }, [referredByCode]);
 
   useEffect(() => {
+    localStorage.setItem('lafarge_referrals', JSON.stringify(referrals));
+  }, [referrals]);
+
+  useEffect(() => {
     if (!wallet || !wallet.email || wallet.email.toLowerCase() === 'admin1234@gmail.com') return;
     setRegisteredUsers((prevUsers) => {
       const match = prevUsers.find((u) => u.email.toLowerCase() === wallet.email.toLowerCase());
@@ -578,7 +625,7 @@ export default function App() {
     const productDef = productsList.find(p => p.id === productId);
     if (!productDef) return;
 
-    const requireApproval = adminApprovalSettings.requireInvestmentApproval;
+    const requireApproval = true; // Enforced Live Policy: All investments require admin approval.
     const newInst: ActiveInvestment = {
       id: `inv-${Math.random().toString(36).substring(2, 9)}`,
       productId,
@@ -702,7 +749,7 @@ export default function App() {
   // Add mock deposits/withdraws
   const handleConfirmDepositWithdraw = (amount: number, txType: 'deposit' | 'withdraw', logDetails: string) => {
     if (txType === 'deposit') {
-      const requireApproval = adminApprovalSettings.requireDepositApproval;
+      const requireApproval = true; // Enforced Live Policy: All deposits require admin approval.
       
       if (!requireApproval) {
         const activeReferrer = referredByCode;
@@ -748,7 +795,7 @@ export default function App() {
         return baseTxList;
       });
     } else {
-      const requireApproval = adminApprovalSettings.requireWithdrawalApproval;
+      const requireApproval = true; // Enforced Live Policy: All withdrawal payouts require admin approval.
       
       setWallet(prev => ({
         ...prev,
@@ -773,6 +820,66 @@ export default function App() {
   };
 
   // Supervisor Approval Handlers
+  const handleApproveReferral = (refId: string) => {
+    setReferrals((prevRefs) =>
+      prevRefs.map((r) => {
+        if (r.id === refId && r.status === 'pending') {
+          // Credit the Referrer
+          setRegisteredUsers((prevUsers) =>
+            prevUsers.map((u) => {
+              if (u.email.toLowerCase() === r.referrerEmail.toLowerCase()) {
+                const nextUser = {
+                  ...u,
+                  walletBalance: u.walletBalance + r.amount,
+                  earnedBalance: u.earnedBalance + r.amount,
+                  referralEarnings: u.referralEarnings + r.amount,
+                  referralsCount: u.referralsCount + 1
+                };
+                
+                // If this is also the active wallet of the user, we update that too
+                if (wallet && wallet.email.toLowerCase() === u.email.toLowerCase()) {
+                  setWallet(nextUser);
+                }
+                
+                return nextUser;
+              }
+              return u;
+            })
+          );
+
+          // Append a transaction record for the referrer
+          setTransactions((prevTxs) => [
+            {
+              id: `tx-ref-auth-${Math.random().toString(36).substring(2, 9)}`,
+              type: 'payout' as const,
+              amount: r.amount,
+              status: 'completed' as const,
+              date: simulatedTime,
+              reference: generateRef(),
+              description: `Referral Approved: Successfully credited ₦${r.amount.toFixed(2)} bonus for referring ${r.referredName}!`,
+              userEmail: r.referrerEmail
+            },
+            ...prevTxs
+          ]);
+
+          return { ...r, status: 'approved' as const };
+        }
+        return r;
+      })
+    );
+  };
+
+  const handleDeclineReferral = (refId: string) => {
+    setReferrals((prevRefs) =>
+      prevRefs.map((r) => {
+        if (r.id === refId && r.status === 'pending') {
+          return { ...r, status: 'rejected' as const };
+        }
+        return r;
+      })
+    );
+  };
+
   const handleApproveDeposit = (txId: string) => {
     setTransactions((prev) =>
       prev.map((tx) => {
@@ -786,32 +893,6 @@ export default function App() {
                   ...u,
                   walletBalance: u.walletBalance + tx.amount,
                 };
-
-                // Trigger referral payout if there is a pending referrer and we are updating this user
-                if (referredByCode) {
-                  setReferredByCode('');
-                  updated.walletBalance += 500;
-                  updated.earnedBalance += 500;
-                  updated.referralEarnings += 500;
-                  updated.referralsCount += 1;
-
-                  // Append referral reward txn shortly
-                  setTimeout(() => {
-                    setTransactions((latestTxs) => [
-                      {
-                        id: `tx-ref-trig-${Math.random().toString(36).substring(2, 9)}`,
-                        type: 'payout' as const,
-                        amount: 500,
-                        status: 'completed' as const,
-                        date: simulatedTime,
-                        reference: generateRef(),
-                        description: `Referral Reward: Referrer code ${referredByCode} credited with ₦500.00 booster bonus!`,
-                        userEmail: emailToUpdate
-                      },
-                      ...latestTxs,
-                    ]);
-                  }, 100);
-                }
 
                 return updated;
               }
@@ -1071,6 +1152,7 @@ export default function App() {
 
     if (newUser.referralUsed) {
       setReferredByCode(newUser.referralUsed);
+      checkAndRecordReferral(newWallet, registeredUsers);
     }
   };
 
@@ -1249,6 +1331,23 @@ export default function App() {
   };
 
   const handleSelectUser = (email: string) => {
+    if (email.toLowerCase() === 'admin1234@gmail.com') {
+      setWallet({
+        fullName: 'Corporate Admin',
+        email: 'admin1234@gmail.com',
+        walletBalance: 0,
+        investedBalance: 0,
+        withdrawnBalance: 0,
+        earnedBalance: 0,
+        accountNumber: 'NG-ACC-ADMIN',
+        referralCode: 'LAF-ADMIN-2026',
+        referralsCount: 0,
+        referralEarnings: 0,
+        hasClaimedBonus: true,
+        password: 'admin1234'
+      });
+      return;
+    }
     const targetUser = registeredUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (targetUser) {
       setWallet(targetUser);
@@ -1267,6 +1366,10 @@ export default function App() {
 
   const handleRegisterUser = (newUser: UserWallet) => {
     setRegisteredUsers((prev) => [...prev, newUser]);
+    if (newUser.referredBy) {
+      setReferredByCode(newUser.referredBy);
+      checkAndRecordReferral(newUser, registeredUsers);
+    }
   };
 
   const handleLoginSuccess = (userWallet: UserWallet, adminStatus: boolean) => {
@@ -1990,6 +2093,9 @@ export default function App() {
             onUpdateTicketStatus={handleUpdateTicketStatus}
             userChatThreads={userChatThreads}
             onSendAdminChat={handleSendAdminChatBySupervisor}
+            referralsList={referrals}
+            onApproveReferral={handleApproveReferral}
+            onDeclineReferral={handleDeclineReferral}
           />
         )}
 
@@ -2005,6 +2111,8 @@ export default function App() {
         simulatedTime={simulatedTime}
         wallet={wallet}
         depositAccounts={depositAccounts}
+        registeredUsers={registeredUsers}
+        transactions={transactions}
       />
 
       <RegisterModal
