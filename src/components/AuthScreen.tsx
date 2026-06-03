@@ -51,13 +51,13 @@ export default function AuthScreen({
     const targetPassword = password;
 
     // 1. Admin login checking
-    if (targetEmail === 'admin@lafarge.com' && targetPassword === 'LafargeAdmin2026') {
+    if (targetEmail === 'admin1234@gmail.com' && targetPassword === 'admin1234') {
       setIsSuccess(true);
       setTimeout(() => {
         // Admin user profile structure
         onLoginSuccess({
           fullName: 'Corporate Admin',
-          email: 'admin@lafarge.com',
+          email: 'admin1234@gmail.com',
           walletBalance: 0,
           investedBalance: 0,
           withdrawnBalance: 0,
@@ -67,7 +67,7 @@ export default function AuthScreen({
           referralsCount: 0,
           referralEarnings: 0,
           hasClaimedBonus: true,
-          password: 'LafargeAdmin2026'
+          password: 'admin1234'
         }, true);
         setIsSuccess(false);
       }, 1000);
@@ -108,7 +108,7 @@ export default function AuthScreen({
       setErrorMsg('Please enter a valid shareholder email address.');
       return;
     }
-    if (signupEmail.trim().toLowerCase() === 'admin@lafarge.com') {
+    if (signupEmail.trim().toLowerCase() === 'admin1234@gmail.com') {
       setErrorMsg('The email administrative routing space is restricted. Please use your private email.');
       return;
     }

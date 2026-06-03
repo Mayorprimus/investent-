@@ -166,7 +166,7 @@ export default function App() {
           if (session.isAdmin) {
             return {
               fullName: 'Corporate Admin',
-              email: 'admin@lafarge.com',
+              email: 'admin1234@gmail.com',
               walletBalance: 0,
               investedBalance: 0,
               withdrawnBalance: 0,
@@ -176,7 +176,7 @@ export default function App() {
               referralsCount: 0,
               referralEarnings: 0,
               hasClaimedBonus: true,
-              password: 'LafargeAdmin2026'
+              password: 'admin1234'
             };
           }
         }
@@ -426,7 +426,7 @@ export default function App() {
   }, [referredByCode]);
 
   useEffect(() => {
-    if (!wallet || !wallet.email || wallet.email.toLowerCase() === 'admin@lafarge.com') return;
+    if (!wallet || !wallet.email || wallet.email.toLowerCase() === 'admin1234@gmail.com') return;
     setRegisteredUsers((prevUsers) => {
       const match = prevUsers.find((u) => u.email.toLowerCase() === wallet.email.toLowerCase());
       if (match) {
@@ -444,7 +444,7 @@ export default function App() {
   }, [wallet]);
 
   useEffect(() => {
-    if (!wallet || !wallet.email || wallet.email.toLowerCase() === 'admin@lafarge.com') return;
+    if (!wallet || !wallet.email || wallet.email.toLowerCase() === 'admin1234@gmail.com') return;
     const match = registeredUsers.find((u) => u.email.toLowerCase() === wallet.email.toLowerCase());
     if (match) {
       const hasDiff = Object.keys(match).some(

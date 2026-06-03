@@ -134,7 +134,7 @@ export default function AdminPortal({
     setLoginError('');
 
     // Specific Hardcoded Credentials requested is strictly email and password
-    if (email.trim().toLowerCase() === 'admin@lafarge.com' && password === 'LafargeAdmin2026') {
+    if (email.trim().toLowerCase() === 'admin1234@gmail.com' && password === 'admin1234') {
       setIsAuthenticated(true);
       sessionStorage.setItem('lafarge_admin_auth', 'true');
     } else {
@@ -182,7 +182,7 @@ export default function AdminPortal({
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="e.g. admin@lafarge.com"
+              placeholder="e.g. admin1234@gmail.com"
               className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 focus:border-green-600 focus:bg-white rounded-xl text-xs font-semibold focus:outline-none transition-all"
             />
           </div>
@@ -205,8 +205,8 @@ export default function AdminPortal({
           <div className="p-3 bg-slate-50 border border-slate-150 rounded-xl space-y-1">
             <span className="text-[9px] font-black uppercase text-gray-500 tracking-wider block">🔑 LOCAL DEV ACCESS INFO</span>
             <p className="text-[10px] text-gray-500 leading-normal">
-              Email: <strong className="text-gray-900">admin@lafarge.com</strong><br />
-              Password: <strong className="text-gray-900">LafargeAdmin2026</strong>
+              Email: <strong className="text-gray-900">admin1234@gmail.com</strong><br />
+              Password: <strong className="text-gray-900">admin1234</strong>
             </p>
           </div>
 
@@ -394,7 +394,7 @@ export default function AdminPortal({
                 >
                   {registeredUsers.map((user) => (
                     <option key={user.email} value={user.email}>
-                      {user.fullName} ({user.email}) {user.email === 'admin@lafarge.com' ? '• (Admin Office)' : ''}
+                      {user.fullName} ({user.email}) {user.email === 'admin1234@gmail.com' ? '• (Admin Office)' : ''}
                     </option>
                   ))}
                 </select>
