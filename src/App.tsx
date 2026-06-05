@@ -638,6 +638,8 @@ export default function App() {
       if (hasDiff) {
         setWallet(match);
       }
+    } else if (isInitializedFromServer.current) {
+      handleLogout();
     }
   }, [registeredUsers]);
 
