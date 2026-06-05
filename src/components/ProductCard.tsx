@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import { Factory, Gem, Boxes, Cpu, AlertCircle, ArrowUpRight, ShieldCheck, Sparkles } from 'lucide-react';
 import { InvestmentProduct } from '../types';
 import { formatNGN } from '../utils';
@@ -85,7 +86,11 @@ export default function ProductCard({
 
   return (
     <>
-      <div className="bg-white border border-gray-150 hover:border-green-200 hover:shadow-xl hover:shadow-green-900/[0.02] rounded-2xl p-6 flex flex-col justify-between transition-all relative overflow-hidden group">
+      <motion.div 
+        whileHover={{ y: -5, scale: 1.015 }}
+        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        className="bg-white border border-gray-150 hover:border-green-200 hover:shadow-xl hover:shadow-green-900/[0.02] rounded-2xl p-6 flex flex-col justify-between transition-all relative overflow-hidden group font-sans"
+      >
         
         {/* Top visual accent for active hovering */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-green-600 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -153,11 +158,20 @@ export default function ProductCard({
           Acquire Share Options
           <ArrowUpRight className="w-4 h-4" />
         </button>
-      </div>
+      </motion.div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-[#062817]/65 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-white border border-green-100 rounded-2xl w-full max-w-md shadow-2xl relative overflow-hidden">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-[#062817]/65 backdrop-blur-md flex items-center justify-center z-50 p-4"
+        >
+          <motion.div 
+            initial={{ scale: 0.93, y: 15, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            transition={{ type: "spring", damping: 25, stiffness: 350 }}
+            className="bg-white border border-green-100 rounded-2xl w-full max-w-md shadow-2xl relative overflow-hidden"
+          >
             <div className="h-1.5 bg-green-600 w-full" />
             
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
@@ -277,8 +291,8 @@ export default function ProductCard({
                 Acquire Option Position
               </button>
             </form>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
     </>
   );

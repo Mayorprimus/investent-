@@ -19,9 +19,16 @@ interface ProfileViewProps {
   wallet: UserWallet;
   onUpdateProfile: (updates: Partial<UserWallet>) => void;
   simulatedTime: number;
+  adminApprovalSettings?: {
+    requireDepositApproval: boolean;
+    requireInvestmentApproval: boolean;
+    requireWithdrawalApproval: boolean;
+    customReferralLink?: string;
+    isReferralLinkStatic?: boolean;
+  };
 }
 
-export default function ProfileView({ wallet, onUpdateProfile, simulatedTime }: ProfileViewProps) {
+export default function ProfileView({ wallet, onUpdateProfile, simulatedTime, adminApprovalSettings }: ProfileViewProps) {
   // Account/Bank binding states
   const [bankName, setBankName] = useState(wallet.accountNumber?.split('|')[1] || 'Access Bank');
   const [accountNumber, setAccountNumber] = useState(wallet.accountNumber?.split('|')[0]?.replace('NG-ACC-', '') || '');
@@ -49,6 +56,23 @@ export default function ProfileView({ wallet, onUpdateProfile, simulatedTime }: 
   const [copiedLink, setCopiedLink] = useState(false);
 
   const getReferralLink = () => {
+    const link = adminApprovalSettings?.customReferralLink;
+    if (link && link.trim() !== '') {
+      if (adminApprovalSettings.isReferralLinkStatic) {
+        return link.trim();
+      }
+      // If the link has {CODE} template, replace it
+      if (link.includes('{CODE}')) {
+        return link.replace('{CODE}', wallet.referralCode).trim();
+      }
+      // If it ends with = or is dynamic, let's append referral code nicely
+      if (link.endsWith('=')) {
+        return `${link.trim()}${wallet.referralCode}`;
+      }
+      // Otherwise append ?ref= or &ref=
+      const separator = link.includes('?') ? '&' : '?';
+      return `${link.trim()}${separator}ref=${wallet.referralCode}`;
+    }
     return `${window.location.origin}?ref=${wallet.referralCode}`;
   };
 
@@ -210,13 +234,20 @@ export default function ProfileView({ wallet, onUpdateProfile, simulatedTime }: 
               </div>
 
               <div className="space-y-1">
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Double-Reward Shareholder Link</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Double-Reward Shareholder Link</span>
+                  {adminApprovalSettings?.customReferralLink && adminApprovalSettings.customReferralLink.trim() !== '' && (
+                    <span className="text-[8px] font-bold text-green-700 bg-green-50 px-1.5 py-0.5 border border-green-150 rounded">
+                      Official Admin Link Active
+                    </span>
+                  )}
+                </div>
                 <div className="flex gap-1.5 shrink-0">
                   <input
                     type="text"
                     readOnly
                     value={getReferralLink()}
-                    className="flex-1 bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 text-[10px] text-gray-500 font-mono focus:outline-none select-all"
+                    className="flex-1 bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 text-[10px] text-gray-500 font-mono focus:outline-none select-all font-semibold"
                   />
                   <button
                     id="profile-copy-ref"

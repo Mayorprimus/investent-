@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   ShieldCheck, 
   Lock, 
@@ -44,11 +44,19 @@ interface AdminPortalProps {
     requireDepositApproval: boolean;
     requireInvestmentApproval: boolean;
     requireWithdrawalApproval: boolean;
+    customReferralLink?: string;
+    isReferralLinkStatic?: boolean;
+    csNumber?: string;
+    officialWhatsAppGroup?: string;
   };
   onSaveSettings: (settings: {
     requireDepositApproval: boolean;
     requireInvestmentApproval: boolean;
     requireWithdrawalApproval: boolean;
+    customReferralLink?: string;
+    isReferralLinkStatic?: boolean;
+    csNumber?: string;
+    officialWhatsAppGroup?: string;
   }) => void;
   onApproveDeposit: (txId: string) => void;
   onDeclineDeposit: (txId: string) => void;
@@ -77,6 +85,7 @@ interface AdminPortalProps {
   referralsList: ReferralRelationship[];
   onApproveReferral: (refId: string) => void;
   onDeclineReferral: (refId: string) => void;
+  onDeleteUser?: (email: string) => void;
 }
 
 export default function AdminPortal({
@@ -106,7 +115,8 @@ export default function AdminPortal({
   onSendAdminChat,
   referralsList,
   onApproveReferral,
-  onDeclineReferral
+  onDeclineReferral,
+  onDeleteUser
 }: AdminPortalProps) {
   // Authentication states
   const [email, setEmail] = useState('');
@@ -126,6 +136,22 @@ export default function AdminPortal({
   // Input editing states to manipulate user balances directly (for simulation and testing)
   const [editBalance, setEditBalance] = useState('');
   const [walletSuccessMsg, setWalletSuccessMsg] = useState('');
+
+  // Global Referral Link States
+  const [customRefLink, setCustomRefLink] = useState(adminApprovalSettings.customReferralLink || '');
+  const [isRefLinkStatic, setIsRefLinkStatic] = useState(adminApprovalSettings.isReferralLinkStatic || false);
+  const [adminCsNumber, setAdminCsNumber] = useState(adminApprovalSettings.csNumber || '08158432605');
+  const [adminGroupLink, setAdminGroupLink] = useState(adminApprovalSettings.officialWhatsAppGroup || 'https://chat.whatsapp.com/KHZgCi1h24154DqIIHz3VE');
+  const [settingsSuccessMsg, setSettingsSuccessMsg] = useState('');
+
+  useEffect(() => {
+    if (adminApprovalSettings) {
+      setCustomRefLink(adminApprovalSettings.customReferralLink || '');
+      setIsRefLinkStatic(adminApprovalSettings.isReferralLinkStatic || false);
+      setAdminCsNumber(adminApprovalSettings.csNumber || '08158432605');
+      setAdminGroupLink(adminApprovalSettings.officialWhatsAppGroup || 'https://chat.whatsapp.com/KHZgCi1h24154DqIIHz3VE');
+    }
+  }, [adminApprovalSettings]);
 
   // Customer Service / Ticketing States
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
@@ -280,6 +306,19 @@ export default function AdminPortal({
     setTimeout(() => setWalletSuccessMsg(''), 5000);
   };
 
+  const handleSaveCustomSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSaveSettings({
+      ...adminApprovalSettings,
+      customReferralLink: customRefLink,
+      isReferralLinkStatic: isRefLinkStatic,
+      csNumber: adminCsNumber,
+      officialWhatsAppGroup: adminGroupLink
+    });
+    setSettingsSuccessMsg('Platform policy settings successfully saved and deployed live!');
+    setTimeout(() => setSettingsSuccessMsg(''), 4000);
+  };
+
   return (
     <div className="space-y-8 animate-fade-in" id="admin-portal-dashboard">
       
@@ -304,7 +343,7 @@ export default function AdminPortal({
       </div>
 
       {/* Admin Horizontal Tabs navigation */}
-      <div className="flex flex-wrap gap-2 border-b border-gray-105 pb-px">
+      <div className="flex overflow-x-auto overflow-y-hidden gap-1 border-b border-gray-105 pb-px -mx-4 px-4 sm:mx-0 sm:px-0 whitespace-nowrap scrollbar-hide scroll-smooth">
         {[
           { id: 'overview', name: 'Executive Overview', count: 0, icon: Landmark },
           { id: 'users', name: 'Shareholders Directory', count: registeredUsers.length, icon: Users },
@@ -322,7 +361,7 @@ export default function AdminPortal({
             <button
               key={tab.id}
               onClick={() => setAdminTab(tab.id as any)}
-              className={`flex items-center gap-2 px-4 py-3 border-b-2 text-xs font-bold font-sans cursor-pointer transition-all ${
+              className={`flex items-center gap-2 px-4 py-3 border-b-2 text-xs font-bold font-sans cursor-pointer transition-all shrink-0 ${
                 isSelected 
                   ? 'border-[#028A34] text-[#028A34]' 
                   : 'border-transparent text-gray-500 hover:text-gray-900'
@@ -758,6 +797,19 @@ export default function AdminPortal({
                               >
                                 {isCurrentlyManaged ? 'Active Override' : 'Override Balance'}
                               </button>
+                              {usr.email.toLowerCase() !== 'admin1234@gmail.com' && onDeleteUser && (
+                                <button
+                                  onClick={() => {
+                                    if (confirm(`Are you sure you want to permanently delete user ${usr.fullName} (${usr.email})? This action is irreversible.`)) {
+                                      onDeleteUser(usr.email);
+                                    }
+                                  }}
+                                  className="p-1 px-2 border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer transition-colors"
+                                  title="Delete User Account"
+                                >
+                                  <Trash className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -987,41 +1039,57 @@ export default function AdminPortal({
             </div>
           ) : (
             <div className="space-y-4 font-sans justify-normal">
-              {pendingWithdrawals.map((tx) => (
-                <div key={tx.id} className="p-4 bg-slate-50 border border-slate-150 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all hover:bg-slate-50/80">
-                  <div className="space-y-1.5 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 bg-red-100 border border-red-150 text-red-800 uppercase font-black text-[9px] tracking-wider rounded">Awaiting Approval</span>
-                      <span className="text-[10px] font-mono text-gray-400 font-bold">REF: {tx.reference}</span>
+              {pendingWithdrawals.map((tx) => {
+                const applicant = registeredUsers.find(u => u.email.toLowerCase() === (tx.userEmail || '').toLowerCase());
+                const applicantName = applicant ? applicant.fullName : 'Premium Shareholder';
+                const applicantAccount = applicant ? (applicant.accountNumber || 'Pending settlement setup') : 'Pending settlement setup';
+                return (
+                  <div key={tx.id} className="p-4 bg-slate-50 border border-slate-150 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all hover:bg-slate-50/80">
+                    <div className="space-y-1.5 flex-1 w-full">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="px-2 py-0.5 bg-red-100 border border-red-150 text-red-800 uppercase font-black text-[9px] tracking-wider rounded">Awaiting Approval</span>
+                        <span className="text-[10px] font-mono text-gray-400 font-bold">REF: {tx.reference}</span>
+                        {tx.userEmail && <span className="text-[10px] font-mono text-[#028A34] font-black">{tx.userEmail}</span>}
+                      </div>
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-xl font-black font-mono text-gray-950">{formatNGN(tx.amount)}</span>
+                        <span className="text-xs text-red-705 font-black uppercase tracking-widest">Payout Exit Transfer</span>
+                      </div>
+                      <p className="text-xs text-gray-550 leading-relaxed font-semibold">{tx.description}</p>
+                      <div className="p-2.5 bg-white border border-gray-150 rounded-xl text-[10px] text-gray-450 font-bold space-y-1.5">
+                        <div className="flex justify-between border-b border-gray-50 pb-1.5">
+                          <span>Account Holder:</span>
+                          <span className="text-gray-950 font-black">{applicantName}</span>
+                        </div>
+                        <div className="flex justify-between border-b border-gray-50 pb-1.5">
+                          <span>Receiving Details:</span>
+                          <span className="text-[#028A34] font-black select-all">{applicantAccount}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Requested At:</span>
+                          <span className="text-gray-950 font-bold">{new Date(tx.date).toLocaleString()}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-xl font-black font-mono text-gray-950">{formatNGN(tx.amount)}</span>
-                      <span className="text-xs text-red-700 font-bold uppercase tracking-widest">Payout Exit Transfer</span>
-                    </div>
-                    <p className="text-xs text-gray-550 leading-relaxed font-semibold">{tx.description}</p>
-                    <div className="p-2.5 bg-white border border-gray-150 rounded-lg text-[10px] text-gray-500 font-semibold space-y-0.5">
-                      <div>Receiving Account: <strong className="text-gray-900 font-bold">{wallet.fullName} ({wallet.accountNumber})</strong></div>
-                      <div>Requested on platform time: <strong className="text-gray-900 font-bold">{new Date(tx.date).toLocaleString()}</strong></div>
-                    </div>
-                  </div>
 
-                  {/* Actions buttons */}
-                  <div className="flex items-center gap-2.5 w-full md:w-auto self-end md:self-center shrink-0">
-                    <button
-                      onClick={() => onDeclineWithdrawal(tx.id)}
-                      className="flex-1 md:flex-initial px-4 py-2 bg-red-50 hover:bg-red-100 border border-red-150 text-red-700 hover:text-red-950 rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5"
-                    >
-                      <XCircle className="w-4 h-4" /> Decline & Refund Wallet
-                    </button>
-                    <button
-                      onClick={() => onApproveWithdrawal(tx.id)}
-                      className="flex-1 md:flex-initial px-5 py-2.5 bg-[#028A34] hover:bg-green-800 text-white rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-green-150"
-                    >
-                      <CheckCircle className="w-4 h-4" /> Verify & Authorize Payout
-                    </button>
+                    {/* Actions buttons */}
+                    <div className="flex items-center gap-2.5 w-full md:w-auto self-end md:self-center shrink-0">
+                      <button
+                        onClick={() => onDeclineWithdrawal(tx.id)}
+                        className="flex-1 md:flex-initial px-4 py-2 bg-red-50 hover:bg-red-100 border border-red-150 text-red-700 hover:text-red-955 rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5"
+                      >
+                        <XCircle className="w-4 h-4" /> Decline & Refund Wallet
+                      </button>
+                      <button
+                        onClick={() => onApproveWithdrawal(tx.id)}
+                        className="flex-1 md:flex-initial px-5 py-2.5 bg-[#028A34] hover:bg-green-800 text-white rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-green-150"
+                      >
+                        <CheckCircle className="w-4 h-4" /> Verify & Authorize Payout
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -1104,6 +1172,107 @@ export default function AdminPortal({
             </div>
 
           </div>
+
+          {/* Custom Global Referral Link Config Form */}
+          <hr className="border-gray-150 my-6" />
+
+          <form onSubmit={handleSaveCustomSettings} className="space-y-5">
+            <div>
+              <h4 className="text-sm font-black text-gray-950 flex items-center gap-1.5">
+                🔗 Custom Global Referral Link Policy
+              </h4>
+              <p className="text-[11px] text-gray-400 font-semibold mt-0.5">
+                Configure a custom platform link (e.g. your WhatsApp/Telegram bot link or landing page) that will be displayed on all shareholder profiles.
+              </p>
+            </div>
+
+            {settingsSuccessMsg && (
+              <div className="p-3 bg-emerald-50 border border-emerald-150 text-[#028A34] text-xs font-bold rounded-xl animate-fade-in">
+                {settingsSuccessMsg}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] uppercase font-black text-gray-450 tracking-wider">
+                    📞 Customer Service (CS) WhatsApp Number
+                  </label>
+                  <input
+                    type="text"
+                    value={adminCsNumber}
+                    onChange={(e) => setAdminCsNumber(e.target.value)}
+                    placeholder="e.g. 08158432605"
+                    className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#028A34]"
+                  />
+                  <p className="text-[10px] text-gray-500 font-semibold leading-relaxed">
+                    Enter the WhatsApp support hot number (including zero or dial code). This will update all contact links on the shareholder dashboard instantly.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] uppercase font-black text-gray-450 tracking-wider">
+                    💬 Official WhatsApp Group Link
+                  </label>
+                  <input
+                    type="text"
+                    value={adminGroupLink}
+                    onChange={(e) => setAdminGroupLink(e.target.value)}
+                    placeholder="e.g. https://chat.whatsapp.com/..."
+                    className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#028A34]"
+                  />
+                  <p className="text-[10px] text-gray-500 font-semibold leading-relaxed">
+                    Optionally configure an official interactive WhatsApp community chat group link for all new and existing registered shareholders.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-[10px] uppercase font-black text-gray-450 tracking-wider">
+                  Custom Referral Link URL / Path
+                </label>
+                <input
+                  type="text"
+                  value={customRefLink}
+                  onChange={(e) => setCustomRefLink(e.target.value)}
+                  placeholder="e.g. https://t.me/LafargePortBot or https://yoursite.com/register"
+                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#028A34]"
+                />
+                <p className="text-[10px] text-gray-500 font-semibold leading-relaxed">
+                  Leave blank to use the default web domain. Include placeholder <code>{"{CODE}"}</code> if you need the referral code inserted at a custom location, otherwise it will append <code>?ref=CODE</code> (or <code>&ref=CODE</code> if the link already contains options).
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between p-3.5 border border-amber-100 bg-amber-50/10 rounded-2xl">
+                <div className="space-y-0.5 pr-4">
+                  <span className="text-xs font-black text-gray-950 block">Static Identical Link For Everyone</span>
+                  <p className="text-[10px] text-gray-550 font-semibold leading-normal">
+                    When toggled ON, everyone sees exactly the identical, static URL link written above (such as a generic group link) and the application will NOT automatically append their personal referral code.
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={isRefLinkStatic}
+                    onChange={(e) => setIsRefLinkStatic(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-10 h-6 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-green-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#028A34]"></div>
+                </label>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-[#028a34] hover:bg-green-800 text-white text-xs font-black rounded-xl transition-all shadow-md shadow-green-950/10 active:scale-95 cursor-pointer"
+                >
+                  Deploy Link Policy Live
+                </button>
+              </div>
+            </div>
+          </form>
+
+          <hr className="border-gray-150 my-6" />
 
           <div className="p-4 bg-[#028A34]/5 border border-[#028A34]/15 rounded-2xl space-y-2">
             <span className="text-xs font-black text-[#028A34]">💡 Testing Guideline</span>

@@ -34,7 +34,7 @@ export default function TransactionHistory({ transactions }: TransactionHistoryP
       case 'pending':
         return (
           <span className="bg-amber-50 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-100 flex items-center gap-1 w-max">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> Pending
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> Processing
           </span>
         );
       default:

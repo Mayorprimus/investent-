@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { Shield, Landmark, User, Mail, Lock, Gift, HelpCircle, ShieldCheck } from 'lucide-react';
 import { formatNGN } from '../utils';
 import { UserWallet } from '../types';
@@ -191,7 +192,12 @@ export default function AuthScreen({
         </div>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+      <motion.div 
+        initial={{ opacity: 0, y: 30, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        className="mt-8 sm:mx-auto sm:w-full sm:max-w-md"
+      >
         <div className="bg-white py-8 px-6 sm:px-10 rounded-3xl border border-gray-150 shadow-xl space-y-6 relative overflow-hidden">
           
           {/* Decorative ambient background pattern */}
@@ -440,7 +446,7 @@ export default function AuthScreen({
           )}
 
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

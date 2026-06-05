@@ -84,14 +84,14 @@ export default function VirtualTimeMachine({
           </button>
 
           <button
-            id="btn-time-leap-4d"
-            onClick={() => handleLeap(4)}
+            id="btn-time-leap-15d"
+            onClick={() => handleLeap(15)}
             className="py-3 bg-white hover:bg-green-50 text-green-950 rounded-xl text-xs font-semibold active:scale-95 transition-all text-center cursor-pointer flex flex-col items-center justify-center gap-0.5 shadow-md shadow-green-950/20"
           >
             <span className="text-sm font-black tracking-tight flex items-center gap-1">
-              <FastForward className="w-3.5 h-3.5 fill-green-950 text-green-950" /> +4 Days
+              <FastForward className="w-3.5 h-3.5 fill-green-950 text-green-950" /> +15 Days
             </span>
-            <span className="text-[8px] text-[#028A34] font-extrabold">+60% Payout</span>
+            <span className="text-[8px] text-[#028A34] font-extrabold">+225% Payout</span>
           </button>
         </div>
 
