@@ -172,16 +172,16 @@ export default function ProductCard({
             initial={{ scale: 0.93, y: 15, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
             transition={{ type: "spring", damping: 25, stiffness: 350 }}
-            className="bg-white border border-green-100 rounded-2xl w-full max-w-md shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden"
+            className="bg-white border border-green-100 rounded-2xl w-full max-w-md shadow-2xl relative flex flex-col max-h-[95vh] overflow-hidden animate-in fade-in zoom-in-95 duration-150"
           >
             <div className="h-1.5 bg-green-600 w-full shrink-0" />
             
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0 border-slate-100/80">
+            <div className="p-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0 border-slate-100/80">
               <div>
                 <span className="text-[10px] uppercase font-bold tracking-widest text-[#028A34] bg-green-100 px-2 py-0.5 rounded">
                   Portfolio Placement
                 </span>
-                <h3 className="text-lg font-bold text-gray-900 mt-1">{product.name} Allocation</h3>
+                <h3 className="text-base font-bold text-gray-905 mt-0.5">{product.name} Allocation</h3>
               </div>
               <button
                 id="btn-close-invest-setup"
@@ -194,25 +194,25 @@ export default function ProductCard({
 
             <div className="flex-1 overflow-y-auto min-h-0">
               {isSuccess ? (
-                <div className="p-8 text-center space-y-6">
-                  <div className="w-16 h-16 bg-amber-50 border border-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto animate-pulse">
-                    <Clock className="w-8 h-8" />
+                <div className="p-6 text-center space-y-4">
+                  <div className="w-12 h-12 bg-amber-50 border border-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto animate-pulse">
+                    <Clock className="w-6 h-6" />
                   </div>
-                  <div className="space-y-2">
-                    <h4 className="text-xl font-bold text-gray-900 font-display">Awaiting CEO Approval</h4>
-                    <p className="text-xs text-gray-500 leading-relaxed max-w-sm mx-auto">
+                  <div className="space-y-1">
+                    <h4 className="text-lg font-bold text-gray-900 font-display">Awaiting CEO Approval</h4>
+                    <p className="text-xs text-gray-500 leading-normal max-w-sm mx-auto">
                       Your share option placement of <strong className="text-gray-900">{formatNGN(parseFloat(amount || '0'))}</strong> in {product.name} is now pending corporate underwrite authorization.
                     </p>
-                    <div className="bg-amber-50 border border-amber-150 rounded-xl p-4 mt-4 text-[11px] font-semibold text-amber-800 leading-relaxed text-left space-y-1 font-sans">
-                      <p className="font-extrabold text-amber-900">&#9679; Executive Board Notice:</p>
-                      <p>This transaction has been securely logged. The board has been notified and you can check the status on your portfolio anytime. The supervisor CEO must manually review and approve this on their Admin Portal before it starts generating active yields.</p>
+                    <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 mt-3 text-[11px] text-amber-800 leading-normal text-left font-sans space-y-0.5">
+                      <p className="font-extrabold text-amber-905">&#9679; Executive Board Notice:</p>
+                      <p>This transaction has been securely logged. The supervisor CEO must review and approve this on their Admin Portal before it starts generating active yields.</p>
                     </div>
                   </div>
                   <button
                     id="btn-close-success-modal"
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="w-full py-3 bg-[#028A34] hover:bg-[#027029] text-white rounded-xl text-sm font-bold shadow-md transition-all cursor-pointer font-sans"
+                    className="w-full py-2.5 bg-[#028A34] hover:bg-[#027029] text-white rounded-xl text-sm font-bold shadow-md transition-all cursor-pointer font-sans"
                   >
                     Close Window
                   </button>
@@ -220,9 +220,9 @@ export default function ProductCard({
               ) : (
                 <>
                   {errorText && (
-                    <div className="mx-6 mt-4 p-3 bg-rose-50 border border-rose-100 rounded-xl flex gap-2.5 text-rose-700 text-xs font-bold leading-relaxed">
+                    <div className="mx-4 mt-3.5 p-2.5 bg-rose-50 border border-rose-100 rounded-xl flex gap-2 text-rose-700 text-xs font-bold leading-normal">
                       <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                      <div className="space-y-1">
+                      <div className="space-y-0.5">
                         <p>{errorText}</p>
                         {errorText.includes('Insufficient wallet balance') && (
                           <button
@@ -240,82 +240,68 @@ export default function ProductCard({
                     </div>
                   )}
 
-                  <form onSubmit={handleModalSubmit} className="p-6 space-y-5">
+                  <form onSubmit={handleModalSubmit} className="p-4 space-y-3.5">
                     <div>
-                      <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
                         Share Capital (Naira ₦)
                       </label>
                       <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-gray-400">₦</span>
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xl font-bold text-gray-400">₦</span>
                         <input
                           id="input-invest-amount"
                           type="number"
                           value={amount}
                           onChange={(e) => setAmount(e.target.value)}
-                          className="w-full pl-9 pr-4 py-3 border-2 border-green-104 rounded-xl text-3xl font-black bg-gray-50 focus:bg-white focus:border-green-600 focus:outline-none transition-all text-gray-850"
+                          className="w-full pl-8 pr-3 py-2 border-2 border-green-100/80 rounded-xl text-2xl font-black bg-gray-50 focus:bg-white focus:border-green-600 focus:outline-none transition-all text-gray-850"
                         />
                       </div>
-                      <div className="mt-2 flex justify-between text-[11px] text-gray-400 font-semibold font-sans">
-                        <span>Limits: {formatNGN(product.minAmount)} - {formatNGN(product.maxAmount)}</span>
-                        <span>Balance: <strong className="text-green-800">{formatNGN(walletBalance)}</strong></span>
+                      <div className="mt-1.5 flex justify-between text-[11px] text-gray-400 font-semibold font-sans">
+                        <span>Min/Max: {formatNGN(product.minAmount)} - {formatNGN(product.maxAmount)}</span>
+                        <span>Wallet Balance: <strong className="text-green-800">{formatNGN(walletBalance)}</strong></span>
                       </div>
                     </div>
 
-                    {/* Compounding Toggle */}
-                    <div className="p-4 bg-green-50/40 border border-green-150 rounded-xl space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-xs text-green-905 uppercase tracking-wider block">Auto-Rollover Payouts</span>
-                        <label className="relative inline-flex items-center cursor-not-allowed">
-                          <input
-                            id="checkbox-compound"
-                            type="checkbox"
-                            checked={true}
-                            disabled={true}
-                            className="sr-only peer"
-                          />
-                          <div className="w-10 h-6 bg-[#028A34]/30 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all translate-x-0 peer-checked:after:translate-x-full after:translate-x-4 peer-checked:bg-[#028A34] bg-[#028A34]"></div>
-                        </label>
+                    {/* Highly Compact Compounding Info Row */}
+                    <div className="p-2.5 bg-green-50/50 border border-green-150/70 rounded-xl flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5 text-green-900 font-bold">
+                        <Sparkles className="w-3.5 h-3.5 text-green-600 animate-pulse" />
+                        <span>Daily Auto-Compounding Payouts</span>
                       </div>
-                      <p className="text-[11px] text-gray-500 leading-relaxed font-semibold">
-                        Compounding is <strong className="text-green-800">Always Active</strong> on all Lafarge cement development allocations to guarantee maximum shareholder compound returns.
-                      </p>
-                      <div className="flex items-center gap-1.5 text-[10px] text-green-800 font-black pt-1 bg-green-100/20 px-2 py-1 rounded">
-                        <Sparkles className="w-3.5 h-3.5 text-green-600 animate-pulse" /> Rollover Pipeline: Activated and Secured
-                      </div>
+                      <span className="text-[9px] uppercase font-black text-green-700 bg-green-100 px-2 py-0.5 rounded-md">
+                        Always On
+                      </span>
                     </div>
 
-                    {/* Real-time Forecast Calculations */}
-                    <div className="bg-gray-50 border border-gray-150 p-4 rounded-xl space-y-1.5 text-xs text-gray-555 font-semibold font-sans">
+                    {/* Real-time Forecast Calculations (Compact) */}
+                    <div className="bg-gray-50 border border-gray-150 p-3 rounded-xl space-y-1 text-xs text-gray-555 font-semibold font-sans">
                       <div className="flex justify-between">
-                        <span>Daily Yield Dividends:</span>
+                        <span>Daily Dividends Payout:</span>
                         <strong className="text-green-700">
                           +{formatNGN(parseFloat(amount || '0') * product.rate)} / Day
                         </strong>
                       </div>
                       <div className="flex justify-between">
-                        <span>Total Return in {product.termDays} Days (Term):</span>
+                        <span>Total Accumulated Returns:</span>
                         <strong className="text-gray-900 font-mono">
                           +{formatNGN(parseFloat(amount || '0') * product.rate * product.termDays)} ({((product.rate * 100) * product.termDays).toFixed(0)}.0%)
                         </strong>
                       </div>
-                      <div className="flex justify-between border-t border-gray-200/50 pt-1.5 mt-1.5">
-                        <span>Principal + Profit Paid Back:</span>
-                        <strong className="text-[#028A34] text-sm font-mono">
+                      <div className="flex justify-between border-t border-gray-200/50 pt-1 mt-1">
+                        <span>Total Matured Capital Recoup:</span>
+                        <strong className="text-[#028A34] text-xs font-mono">
                           {formatNGN(parseFloat(amount || '0') * (1 + product.rate * product.termDays))}
                         </strong>
                       </div>
-                      {true && (
-                        <div className="flex justify-between border-t border-dashed border-gray-200 mt-2 pt-2 text-[#028A34] font-extrabold text-[12px]">
-                          <span>Expected Compound (3 cycles):</span>
-                          <span className="font-mono">{formatNGN(parseFloat(amount || '0') * Math.pow(1 + product.rate * product.termDays, 3))}</span>
-                        </div>
-                      )}
+                      <div className="flex justify-between border-t border-dashed border-gray-200 mt-1.5 pt-1.5 text-[#028A34] font-extrabold text-[11px]">
+                        <span>Expected Compound (3 cycles):</span>
+                        <span className="font-mono">{formatNGN(parseFloat(amount || '0') * Math.pow(1 + product.rate * product.termDays, 3))}</span>
+                      </div>
                     </div>
 
                     <button
                       id="btn-confirm-investment"
                       type="submit"
-                      className="w-full py-3 bg-[#028A34] hover:bg-[#027029] text-white rounded-xl text-sm font-bold shadow-md transition-all cursor-pointer font-sans"
+                      className="w-full py-2.5 bg-[#028A34] hover:bg-[#027029] text-white rounded-xl text-sm font-bold shadow-md transition-all cursor-pointer font-sans"
                     >
                       Acquire Option Position
                     </button>

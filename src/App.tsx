@@ -545,7 +545,13 @@ export default function App() {
           }
         }
       } catch (e) {
-        console.error("Online poll error:", e);
+        // Gracefully warning-log transient network/restart errors, only error on true logical bugs
+        const errorMsg = e instanceof Error ? e.message : String(e);
+        if (errorMsg.includes('Failed to fetch') || errorMsg.includes('fetch') || errorMsg.includes('network') || errorMsg.includes('Load failed')) {
+          console.warn("Sync server is temporarily offline or restarting, retrying soon...");
+        } else {
+          console.error("Online poll error:", e);
+        }
       }
     };
 
@@ -595,7 +601,13 @@ export default function App() {
           }
         }
       } catch (error) {
-        console.error("Sync push error:", error);
+        // Gracefully warning-log transient connection errors, only error on true logical bugs
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        if (errorMsg.includes('Failed to fetch') || errorMsg.includes('fetch') || errorMsg.includes('network') || errorMsg.includes('Load failed')) {
+          console.warn("Sync push is temporarily deferred due to offline/restart state. Will retry...");
+        } else {
+          console.error("Sync push error:", error);
+        }
       }
     };
 
