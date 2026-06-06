@@ -72,102 +72,72 @@ export default function PromoReferralModal({ isOpen, onClose, wallet, adminAppro
               <X className="w-5 h-5" />
             </button>
 
-            <div className="p-6 text-center space-y-6">
+            <div className="p-4 sm:p-5 text-center space-y-4">
               
               {/* Main Badge Graphic */}
-              <div className="relative inline-flex items-center justify-center p-5 bg-gradient-to-br from-emerald-50 to-green-100 rounded-2xl border border-green-200 mx-auto mt-2">
-                <Gift className="w-12 h-12 text-[#028A34] animate-bounce" />
+              <div className="relative inline-flex items-center justify-center p-3 bg-gradient-to-br from-emerald-50 to-green-155 rounded-xl border border-green-200 mx-auto mt-1">
+                <Gift className="w-8 h-8 text-[#028A34]" />
                 <motion.div
-                  animate={{ scale: [1, 1.2, 1], opacity: [0.6, 1, 0.6] }}
+                  animate={{ scale: [1, 1.15, 1], opacity: [0.7, 1, 0.7] }}
                   transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute -top-1 -right-1"
+                  className="absolute -top-0.5 -right-0.5"
                 >
-                  <Sparkles className="w-5 h-5 text-yellow-500 fill-yellow-400" />
+                  <Sparkles className="w-4 h-4 text-yellow-500 fill-yellow-400" />
                 </motion.div>
               </div>
 
               {/* Header Title with Brand Touch */}
               <div className="space-y-1">
-                <span className="text-[10px] font-black tracking-widest text-[#028A34] uppercase bg-green-50 border border-green-150 px-3 py-1 rounded-full inline-block">
-                  Double Booster Reward Registered
+                <span className="text-[9px] font-black tracking-widest text-[#028A34] uppercase bg-green-50 border border-green-150 px-2 py-0.5 rounded-full inline-block">
+                  Registration Bonus Active
                 </span>
-                <h3 className="text-2xl font-black text-gray-950 font-display tracking-tight leading-tight pt-1">
-                  Share & Unlock ₦500.00 Referral Bonuses!
+                <h3 className="text-lg font-black text-gray-950 font-display tracking-tight leading-tight">
+                  Unlock ₦500.00 Referrals!
                 </h3>
-                <p className="text-xs text-gray-400 font-extrabold max-w-sm mx-auto">
-                  Corporate Alliance Shareholder Expansion Incentive
+                <p className="text-[11px] text-gray-500 font-semibold max-w-xs mx-auto leading-relaxed">
+                  Every user you invite credits your balance with <strong className="text-green-800">₦500.00</strong> when they start a cement options package.
                 </p>
               </div>
 
-              {/* Bonus Information highlight */}
-              <div className="bg-slate-50 border border-gray-150 rounded-2xl p-4 text-left space-y-3.5">
-                <div className="flex gap-3 items-start">
-                  <div className="p-1.5 bg-green-50 text-[#028A34] rounded-lg shrink-0 border border-green-100 mt-0.5">
-                    <Coins className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-black text-gray-900 uppercase tracking-wide leading-none">Instant ₦500.00 Payoffs</h4>
-                    <p className="text-[11px] text-gray-500 font-semibold mt-1 leading-normal">
-                      Every single partner you invite that completes their corporate options registration credits your wallet with an immediate <strong className="text-gray-950 font-bold">₦500.00 booster reward</strong>.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-3 items-start">
-                  <div className="p-1.5 bg-yellow-50 text-amber-700 rounded-lg shrink-0 border border-yellow-100 mt-0.5">
-                    <Award className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-black text-gray-900 uppercase tracking-wide leading-none">Zero Cap on Earnings</h4>
-                    <p className="text-[11px] text-gray-500 font-semibold mt-1 leading-normal">
-                      There are no caps or throttles on how many alliance partners you can invite. Accumulate booster credits to withdraw or roll over into active cement production portfolios.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
               {/* Your Personal Referral Code / Card */}
-              <div className="border border-green-100 bg-green-50/10 rounded-2xl p-4 text-left space-y-2">
-                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block leading-none">
-                  Your Personal Shareholder Referral Link
+              <div className="bg-gray-50 border border-gray-150 rounded-xl p-3 text-left space-y-1">
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">
+                  Your Personal Shareholder Invite Link
                 </span>
-                
-                <div className="flex gap-1.5">
-                  <input
-                    type="text"
-                    readOnly
-                    value={getReferralLink()}
-                    className="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-2 text-[11px] text-gray-500 font-mono focus:outline-none select-all font-semibold"
-                  />
-                </div>
+                <input
+                  type="text"
+                  readOnly
+                  value={getReferralLink()}
+                  className="w-full bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-[10px] text-gray-500 font-mono focus:outline-none select-all font-semibold"
+                />
               </div>
 
               {/* Mega Action Button */}
-              <div className="pt-2">
+              <div className="pt-1 space-y-2">
                 <button
                   type="button"
                   id="promo-copy-btn"
                   onClick={handleCopyLink}
-                  className={`w-full py-3 px-5 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md active:scale-[0.98] ${
+                  className={`w-full py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-sm active:scale-[0.98] ${
                     copied 
-                      ? 'bg-emerald-600 shadow-emerald-250 text-white' 
-                      : 'bg-[#028A34] hover:bg-green-800 shadow-green-150 text-white'
+                      ? 'bg-emerald-600 text-white' 
+                      : 'bg-[#028A34] hover:bg-green-800 text-white'
                   }`}
                 >
                   {copied ? (
                     <>
-                      <Check className="w-4 h-4 animate-scale" /> Link Securely Copied!
+                      <Check className="w-4 h-4" /> Copied Successfully!
                     </>
                   ) : (
                     <>
-                      <Copy className="w-4 h-4" /> Copy Shareholder Invite Link
+                      <Copy className="w-3.5 h-3.5" /> Copy Invite Link
                     </>
                   )}
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="w-full text-center text-[10px] text-gray-400 hover:text-gray-600 font-black uppercase tracking-wider mt-3.5 transition-colors cursor-pointer"
+                  className="w-full text-center text-[10px] text-gray-400 hover:text-gray-600 font-bold uppercase tracking-wider py-1 transition-colors cursor-pointer"
                 >
                   Continue to Asset Portfolio
                 </button>
