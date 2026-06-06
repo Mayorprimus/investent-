@@ -81,7 +81,7 @@ export default function RegisterModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto" id="register-modal-container">
+    <div className="fixed inset-0 z-[1000] overflow-y-auto" id="register-modal-container">
       {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" 

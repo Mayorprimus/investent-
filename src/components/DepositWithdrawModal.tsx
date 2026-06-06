@@ -203,8 +203,8 @@ export default function DepositWithdrawModal({
   ];
 
   return (
-    <div className="fixed inset-0 bg-[#062817]/60 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300">
-      <div className="bg-white border border-green-100 rounded-2xl w-full max-w-md shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden transition-all duration-300 transform scale-100">
+    <div className="fixed inset-0 bg-[#062817]/60 backdrop-blur-md flex items-center justify-center z-[1000] p-4 transition-all duration-300">
+      <div className="bg-white border border-green-100 rounded-2xl w-full max-w-md shadow-2xl relative flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden transition-all duration-300 transform scale-100">
         
         {/* Top Accent bar using Lafarge Green */}
         <div className="h-2 bg-[#028A34] w-full shrink-0" />
@@ -229,7 +229,7 @@ export default function DepositWithdrawModal({
         </div>
 
         {/* Scrollable body content */}
-        <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="flex-1 overflow-y-auto min-h-0 pb-10">
           {/* Errors and warnings info */}
           {errorMessage && (
             <div className="mx-6 mt-4 p-3.5 bg-rose-50 border border-rose-100 rounded-xl flex items-start gap-2.5 text-rose-700 text-sm">

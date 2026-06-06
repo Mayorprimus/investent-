@@ -50,7 +50,7 @@ export default function PromoReferralModal({ isOpen, onClose, wallet, adminAppro
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-[#062817]/70 backdrop-blur-md flex items-center justify-center z-50 p-4 font-sans select-none"
+          className="fixed inset-0 bg-[#062817]/70 backdrop-blur-md flex items-center justify-center z-[1000] p-4 font-sans select-none"
         >
           <motion.div
             initial={{ scale: 0.93, y: 20, opacity: 0 }}

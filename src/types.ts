@@ -15,6 +15,7 @@ export interface UserWallet {
   hasClaimedBonus?: boolean;
   password?: string;
   referredBy?: string;
+  autoInvest?: boolean;
 }
 
 export interface InvestmentProduct {

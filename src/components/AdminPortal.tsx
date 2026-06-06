@@ -545,6 +545,24 @@ export default function AdminPortal({
                     <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                   </label>
                 </div>
+
+                {/* Override 4: Force/Enable User Auto-Invest */}
+                <div className="flex items-center justify-between p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl">
+                  <div>
+                    <span className="text-xs font-bold text-emerald-950 block">Enable Auto-Invest Rollover</span>
+                    <span className="text-[10px] text-gray-400 block font-medium">Toggles automated compound cycle rollover on maturity</span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      id="checkbox-admin-toggle-autoinvest"
+                      type="checkbox"
+                      checked={wallet.autoInvest !== false}
+                      onChange={(e) => onUpdateUserWallet({ autoInvest: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                  </label>
+                </div>
               </div>
 
               {walletSuccessMsg && (

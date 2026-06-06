@@ -9,17 +9,19 @@ interface ProductCardProps {
   walletBalance: number;
   onInvest: (productId: string, amount: number, isCompounding: boolean) => void;
   onOpenDeposit: () => void;
+  autoInvestDefault?: boolean;
 }
 
 export default function ProductCard({
   product,
   walletBalance,
   onInvest,
-  onOpenDeposit
+  onOpenDeposit,
+  autoInvestDefault = true
 }: ProductCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [amount, setAmount] = useState('');
-  const [isCompounding, setIsCompounding] = useState(true);
+  const [isCompounding, setIsCompounding] = useState(autoInvestDefault);
   const [errorText, setErrorText] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -59,6 +61,7 @@ export default function ProductCard({
     setAmount(product.minAmount.toString());
     setErrorText('');
     setIsSuccess(false);
+    setIsCompounding(autoInvestDefault);
     setIsModalOpen(true);
   };
 
@@ -166,13 +169,13 @@ export default function ProductCard({
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-[#062817]/65 backdrop-blur-md flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-[#062817]/65 backdrop-blur-md flex items-center justify-center z-[1000] p-4"
         >
           <motion.div 
             initial={{ scale: 0.93, y: 15, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
             transition={{ type: "spring", damping: 25, stiffness: 350 }}
-            className="bg-white border border-green-100 rounded-2xl w-full max-w-md shadow-2xl relative flex flex-col max-h-[95vh] overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+            className="bg-white border border-green-100 rounded-2xl w-full max-w-md shadow-2xl relative flex flex-col max-h-[85vh] sm:max-h-[92vh] overflow-hidden animate-in fade-in zoom-in-95 duration-150"
           >
             <div className="h-1.5 bg-green-600 w-full shrink-0" />
             
@@ -192,7 +195,7 @@ export default function ProductCard({
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="flex-1 overflow-y-auto min-h-0 pb-8">
               {isSuccess ? (
                 <div className="p-6 text-center space-y-4">
                   <div className="w-12 h-12 bg-amber-50 border border-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto animate-pulse">
@@ -262,14 +265,23 @@ export default function ProductCard({
                     </div>
 
                     {/* Highly Compact Compounding Info Row */}
-                    <div className="p-2.5 bg-green-50/50 border border-green-150/70 rounded-xl flex items-center justify-between text-xs">
+                    <div className="p-2.5 bg-green-50/50 border border-green-150/70 rounded-xl flex items-center justify-between text-xs font-sans">
                       <div className="flex items-center gap-1.5 text-green-900 font-bold">
                         <Sparkles className="w-3.5 h-3.5 text-green-600 animate-pulse" />
-                        <span>Daily Auto-Compounding Payouts</span>
+                        <span>Daily Auto-Rollover Reinvest</span>
                       </div>
-                      <span className="text-[9px] uppercase font-black text-green-700 bg-green-100 px-2 py-0.5 rounded-md">
-                        Always On
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="invest-compounding-toggle"
+                          type="checkbox"
+                          checked={isCompounding}
+                          onChange={(e) => setIsCompounding(e.target.checked)}
+                          className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-550 cursor-pointer"
+                        />
+                        <span className="text-[9px] uppercase font-extrabold text-green-700 bg-green-100 px-2 py-0.5 rounded-md">
+                          {isCompounding ? 'ON' : 'OFF'}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Real-time Forecast Calculations (Compact) */}

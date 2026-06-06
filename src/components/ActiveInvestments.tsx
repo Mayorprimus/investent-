@@ -192,18 +192,23 @@ export default function ActiveInvestments({
                   
                   {/* Dynamic interactive compound option */}
                   <div className="flex items-center gap-2.5">
-                    <label className="relative inline-flex items-center cursor-not-allowed">
+                    <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={true}
-                        disabled={true}
+                        checked={inv.isCompounding !== false}
+                        onChange={() => onToggleCompounding(inv.id, inv.isCompounding === false)}
                         className="sr-only peer"
                       />
-                      <div className="w-9 h-5 bg-[#028A34]/30 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all translate-x-0 peer-checked:after:translate-x-full after:translate-x-4 bg-[#028A34]"></div>
+                      <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#028A34]" />
                     </label>
                     <div className="leading-tight">
-                      <span className="text-xs font-bold text-gray-900 block">Auto-Rollover Reinvest (Always On)</span>
-                      <p className="text-[10px] text-gray-400 font-semibold">Automatically restart {termDays}-day cycle at +{(termDays * currentRate * 100).toFixed(1)}% gain</p>
+                      <span className="text-xs font-bold text-gray-900 block">Auto-Rollover Reinvest</span>
+                      <p className="text-[10px] text-gray-400 font-semibold">
+                        {inv.isCompounding !== false 
+                          ? `Automatically restart ${termDays}-day cycle at +${(termDays * currentRate * 100).toFixed(0)}% gain`
+                          : `Disburses principal on maturity date (${new Date(inv.endDate).toLocaleDateString()})`
+                        }
+                      </p>
                     </div>
                   </div>
 

@@ -22,7 +22,8 @@ import {
   MessageSquare,
   Send,
   User,
-  Share2
+  Share2,
+  Sparkles
 } from 'lucide-react';
 
 import { ActiveInvestment, UserWallet, Transaction, SupportTicket, DepositAccount, ReferralRelationship } from './types';
@@ -146,7 +147,8 @@ export default function App() {
         hasClaimedBonus: true,
         password: '2026',
         isFlagged: false,
-        requireReferralToWithdraw: false
+        requireReferralToWithdraw: false,
+        autoInvest: true
       },
       {
         fullName: 'Chioma Adebayo',
@@ -162,7 +164,8 @@ export default function App() {
         hasClaimedBonus: true,
         password: '1234',
         isFlagged: false,
-        requireReferralToWithdraw: false
+        requireReferralToWithdraw: false,
+        autoInvest: true
       },
       {
         fullName: 'Emeka Okafor',
@@ -178,7 +181,8 @@ export default function App() {
         hasClaimedBonus: true,
         password: '1234',
         isFlagged: false,
-        requireReferralToWithdraw: false
+        requireReferralToWithdraw: false,
+        autoInvest: true
       }
     ];
   });
@@ -256,7 +260,8 @@ export default function App() {
       hasClaimedBonus: true,
       password: '2026',
       isFlagged: false,
-      requireReferralToWithdraw: false
+      requireReferralToWithdraw: false,
+      autoInvest: true
     };
   });
 
@@ -939,6 +944,28 @@ export default function App() {
     );
   };
 
+  const handleToggleGlobalAutoInvest = (enabled: boolean) => {
+    setWallet(prev => {
+      const next = { ...prev, autoInvest: enabled };
+      
+      setRegisteredUsers(prevUsers =>
+        prevUsers.map(u => u.email.toLowerCase() === prev.email.toLowerCase() ? { ...u, autoInvest: enabled } : u)
+      );
+      
+      return next;
+    });
+
+    // Sync all user's active/pending investments compounding status to match global preferences!
+    setActiveInvestments(prev => 
+      prev.map(inv => {
+        if (inv.userEmail?.toLowerCase() === wallet.email.toLowerCase()) {
+          return { ...inv, isCompounding: enabled };
+        }
+        return inv;
+      })
+    );
+  };
+
   // Add mock deposits/withdraws
   const handleConfirmDepositWithdraw = (amount: number, txType: 'deposit' | 'withdraw', logDetails: string) => {
     if (txType === 'deposit') {
@@ -1317,7 +1344,8 @@ export default function App() {
       password: newUser.password || '1234', // Uses the user's custom chosen password
       isFlagged: false,
       requireReferralToWithdraw: false,
-      referredBy: newUser.referralUsed || undefined
+      referredBy: newUser.referralUsed || undefined,
+      autoInvest: true
     };
 
     setWallet(newWallet);
@@ -1549,6 +1577,19 @@ export default function App() {
       setRegisteredUsers((prevUsers) =>
         prevUsers.map((u) => u.email.toLowerCase() === prev.email.toLowerCase() ? { ...u, ...updates } : u)
       );
+
+      if (updates.autoInvest !== undefined) {
+        const isAuto = updates.autoInvest;
+        setActiveInvestments(prevInv => 
+          prevInv.map(inv => {
+            if (inv.userEmail?.toLowerCase() === prev.email.toLowerCase()) {
+              return { ...inv, isCompounding: isAuto };
+            }
+            return inv;
+          })
+        );
+      }
+
       return next;
     });
   };
@@ -1775,7 +1816,7 @@ export default function App() {
       )}
 
       {/* Primary Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:pb-8 pb-24 flex-1 w-full space-y-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-32 md:pb-12 flex-1 w-full space-y-8">
         
         {/* Dynamic content render depending on ActiveTab */}
         
@@ -1941,6 +1982,51 @@ export default function App() {
               </div>
             </div>
 
+            {/* Global Auto-Invest setting at the bottom of Portfolio */}
+            <div className="bg-white border border-green-150/40 rounded-2xl p-5 md:p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden transition-all duration-300">
+              <div className="absolute top-0 left-0 w-2 h-full bg-[#028A34]" />
+              
+              <div className="space-y-1.5 md:pl-2 max-w-2xl font-sans">
+                <div className="flex items-center gap-2">
+                  <span className="p-1 px-2.5 bg-green-50 text-[#028A34] text-[10px] font-black uppercase tracking-wider rounded-md border border-green-100">
+                    System Preference
+                  </span>
+                  {wallet.autoInvest !== false ? (
+                    <span className="p-0.5 px-2 bg-[#028A34] text-white text-[9px] font-bold uppercase rounded-md animate-pulse">
+                      ACTIVE & COMPACTING
+                    </span>
+                  ) : (
+                    <span className="p-0.5 px-2 bg-slate-100 text-slate-500 border border-slate-200 text-[9px] font-bold uppercase rounded-md">
+                      PAUSED
+                    </span>
+                  )}
+                </div>
+                <h4 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-yellow-500 shrink-0" /> Account Auto-Invest Reinvestment Node
+                </h4>
+                <p className="text-xs text-gray-550 leading-relaxed font-semibold">
+                  With Auto-Invest enabled (ON by default), all your acquired positions will automatically roll over into a new cycle upon maturity. Disable this to payout matured funds straight into your liquid naira balance.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-4 shrink-0 sm:self-center">
+                <div className="flex items-center gap-3 bg-gray-50 border border-gray-150 rounded-2xl p-3 px-4 shadow-inner">
+                  <span className="text-xs font-black text-gray-900 animate-pulse">
+                    {wallet.autoInvest !== false ? 'Auto-Invest ON' : 'Auto-Invest OFF'}
+                  </span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={wallet.autoInvest !== false}
+                      onChange={(e) => handleToggleGlobalAutoInvest(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-12 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#028A34]" />
+                  </label>
+                </div>
+              </div>
+            </div>
+
           </motion.div>
         )}
 
@@ -1965,6 +2051,7 @@ export default function App() {
                   walletBalance={wallet.walletBalance}
                   onInvest={handleDeployCapital}
                   onOpenDeposit={() => handleOpenModal('deposit')}
+                  autoInvestDefault={wallet.autoInvest !== false}
                 />
               ))}
             </div>
