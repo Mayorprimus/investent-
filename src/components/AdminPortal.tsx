@@ -987,10 +987,10 @@ export default function AdminPortal({
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px] text-gray-400 font-bold uppercase tracking-wider pt-1 border-t border-slate-105">
                       <div>
-                        Daily Profit Potential: <strong className="text-[#028A34] block">+{formatNGN(inv.amountInvested * 0.10)}/day</strong>
+                        Daily Profit Potential: <strong className="text-[#028A34] block font-mono">+{formatNGN(inv.amountInvested * (inv.rate || 0.10))}/day</strong>
                       </div>
                       <div>
-                        Maturity: <strong className="text-gray-700 block">4 Days</strong>
+                        Maturity: <strong className="text-gray-700 block font-mono">{inv.termDays || 4} Days</strong>
                       </div>
                       <div>
                         Expected Return: <strong className="text-gray-700 block">{formatNGN(inv.expectedReturn)}</strong>

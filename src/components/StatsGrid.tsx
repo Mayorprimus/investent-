@@ -1,13 +1,20 @@
 import { Landmark, ShieldCheck, TrendingUp, Sparkles } from 'lucide-react';
 import { formatNGN } from '../utils';
-import { UserWallet } from '../types';
+import { UserWallet, ActiveInvestment } from '../types';
 
 interface StatsGridProps {
   wallet: UserWallet;
   onOpenModal: (type: 'deposit' | 'withdraw') => void;
+  activeInvestments?: ActiveInvestment[];
 }
 
-export default function StatsGrid({ wallet, onOpenModal }: StatsGridProps) {
+export default function StatsGrid({ wallet, onOpenModal, activeInvestments = [] }: StatsGridProps) {
+  // calculate accrued profit from active investments belonging to this user that have completed at least 24 hours
+  const userActiveInvestments = activeInvestments.filter(
+    (inv) => inv.status === 'active' && inv.userEmail?.toLowerCase() === wallet?.email?.toLowerCase()
+  );
+  const activeAccruedProfit = userActiveInvestments.reduce((sum, inv) => sum + (inv.totalAccrued || 0), 0);
+  const allTimeCumulative = wallet.earnedBalance + activeAccruedProfit;
   return (
     <div className="space-y-6">
       
@@ -18,9 +25,9 @@ export default function StatsGrid({ wallet, onOpenModal }: StatsGridProps) {
             <Sparkles className="w-5 h-5 animate-pulse" />
           </div>
           <div>
-            <h4 className="font-bold text-gray-900 text-sm md:text-base">10% Daily Dividends Active</h4>
+            <h4 className="font-bold text-gray-900 text-sm md:text-base">2.50% Daily Dividends Active</h4>
             <p className="text-gray-500 text-xs mt-0.5 max-w-xl">
-              Acquire Lafarge Africa Plc production shares starting at ₦3,000 to generate 10% daily dividends. Fast compounding options live!
+              Acquire Lafarge Africa Plc production shares starting at ₦3,000 to generate guaranteed daily dividends (2.50% daily). Fast compounding options live!
             </p>
           </div>
         </div>
@@ -72,7 +79,7 @@ export default function StatsGrid({ wallet, onOpenModal }: StatsGridProps) {
             <h3 className="text-2xl font-black text-green-800 tracking-tight font-mono">
               {formatNGN(wallet.investedBalance)}
             </h3>
-            <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Earning 10% Daily Dividends</p>
+            <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Earning High-Yield Daily Dividends</p>
           </div>
         </div>
 
@@ -86,7 +93,7 @@ export default function StatsGrid({ wallet, onOpenModal }: StatsGridProps) {
           </div>
           <div className="space-y-1">
             <h3 className="text-2xl font-black text-[#028A34] tracking-tight font-mono">
-              {formatNGN(wallet.earnedBalance)}
+              {formatNGN(allTimeCumulative)}
             </h3>
             <p className="text-[10px] text-green-600/80 font-bold uppercase tracking-wider">Total profit accrued</p>
           </div>

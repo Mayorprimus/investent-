@@ -278,10 +278,11 @@ export default function App() {
         endDate: Date.now() + 10 * 24 * 60 * 60 * 1000,   // 10 days left for 11-day cycle
         lastAccrualTime: Date.now() - 1 * 24 * 60 * 60 * 1000,
         status: 'active',
-        totalAccrued: 3000, // ₦3000 daily dividend (10% of ₦30,000) pre-accrued for demonstration!
-        expectedReturn: 33000, // 10% daily * 11 days on 30,005 is 33,000 profit
+        totalAccrued: 750, // ₦750 daily dividend (2.50% of ₦30,000) pre-accrued for demonstration!
+        expectedReturn: 8250, // 2.50% daily * 11 days on 30,000 is 8,250 profit
         isCompounding: true,
         termDays: 11,
+        rate: 0.025,
         userEmail: 'jeremiahobazee11@gmail.com'
       }
     ];
@@ -408,7 +409,7 @@ export default function App() {
       'jeremiahobazee11@gmail.com': [
         {
           sender: 'agent',
-          text: 'Good day! Welcome to Lafarge-Huaxin Africa Client Relations Desk. I am Blessing Adebayo, your dedicated investment advisor today. How may I help you maximize or solve issues regarding your 10% daily dividend packages?',
+          text: 'Good day! Welcome to Lafarge-Huaxin Africa Client Relations Desk. I am Blessing Adebayo, your dedicated investment advisor today. How may I help you maximize or solve issues regarding your high-yield daily dividend packages?',
           time: 'Just now'
         }
       ]
@@ -418,7 +419,7 @@ export default function App() {
   const csChatMessages = userChatThreads[wallet.email.toLowerCase()] || [
     {
       sender: 'agent',
-      text: 'Good day! Welcome to Lafarge-Huaxin Africa Client Relations Desk. I am Blessing Adebayo, your dedicated investment advisor today. How may I help you maximize or solve issues regarding your 10% daily dividend packages?',
+      text: 'Good day! Welcome to Lafarge-Huaxin Africa Client Relations Desk. I am Blessing Adebayo, your dedicated investment advisor today. How may I help you maximize or solve issues regarding your high-yield daily dividend packages?',
       time: 'Just now'
     }
   ];
@@ -671,15 +672,16 @@ export default function App() {
             userEarnings[email] = 0;
           }
           
-          const termDays = workingInv.termDays || Math.round(workingInv.expectedReturn / (workingInv.amountInvested * 0.10)) || 4;
+          const currentRate = workingInv.rate || 0.10;
+          const termDays = workingInv.termDays || Math.round(workingInv.expectedReturn / (workingInv.amountInvested * currentRate)) || 4;
           
           while (newTime >= workingInv.endDate) {
-            const cycleProfit = workingInv.amountInvested * 0.10 * termDays;
+            const cycleProfit = workingInv.amountInvested * currentRate * termDays;
             userEarnings[email] += cycleProfit;
 
             if (workingInv.isCompounding) {
               // Roll over BOTH principal and profit for next term cycle
-              const newAmountCompounded = workingInv.amountInvested * (1 + (0.10 * termDays));
+              const newAmountCompounded = workingInv.amountInvested * (1 + (currentRate * termDays));
               const prevEndDate = workingInv.endDate;
 
               newTransactions.push({
@@ -707,7 +709,7 @@ export default function App() {
               workingInv.startDate = prevEndDate;
               workingInv.endDate = prevEndDate + (termDays * 24 * 60 * 60 * 1000); // dynamic days
               workingInv.amountInvested = newAmountCompounded;
-              workingInv.expectedReturn = newAmountCompounded * 0.10 * termDays;
+              workingInv.expectedReturn = newAmountCompounded * currentRate * termDays;
               workingInv.totalAccrued = 0; // reset accrued so far
             } else {
               // Stop compounding. Set to matured, capital goes wait for manual payout claim
@@ -722,7 +724,7 @@ export default function App() {
             const elapsedMs = newTime - workingInv.startDate;
             const elapsedDays = Math.floor(elapsedMs / (24 * 60 * 60 * 1000));
             const cappedDays = Math.min(termDays, Math.max(0, elapsedDays));
-            workingInv.totalAccrued = workingInv.amountInvested * 0.10 * cappedDays;
+            workingInv.totalAccrued = workingInv.amountInvested * currentRate * cappedDays;
           }
 
           return workingInv;
@@ -776,19 +778,32 @@ export default function App() {
       lastAccrualTime: simulatedTime,
       status: requireApproval ? 'pending' : 'active',
       totalAccrued: 0,
-      expectedReturn: amountToDeploy * 0.10 * productDef.termDays,
+      expectedReturn: amountToDeploy * productDef.rate * productDef.termDays,
       isCompounding,
       userEmail: wallet.email,
-      termDays: productDef.termDays
+      termDays: productDef.termDays,
+      rate: productDef.rate
     };
 
     // Update state lists
     setActiveInvestments((prev) => [...prev, newInst]);
     setWallet((prev) => ({
       ...prev,
-      walletBalance: prev.walletBalance - amountToDeploy,
+      walletBalance: requireApproval ? prev.walletBalance : prev.walletBalance - amountToDeploy,
       investedBalance: requireApproval ? prev.investedBalance : prev.investedBalance + amountToDeploy
     }));
+
+    setRegisteredUsers((prevUsers) =>
+      prevUsers.map((u) =>
+        u.email.toLowerCase() === wallet.email.toLowerCase()
+          ? {
+              ...u,
+              walletBalance: requireApproval ? u.walletBalance : u.walletBalance - amountToDeploy,
+              investedBalance: requireApproval ? u.investedBalance : u.investedBalance + amountToDeploy
+            }
+          : u
+      )
+    );
 
     setTransactions((prev) => [
       {
@@ -811,8 +826,9 @@ export default function App() {
     if (!target) return;
 
     if (target.status === 'matured') {
-      const termDays = target.termDays || Math.round(target.expectedReturn / (target.amountInvested * 0.10)) || 4;
-      const profit = target.expectedReturn || (target.amountInvested * 0.10 * termDays);
+      const currentRate = target.rate || 0.10;
+      const termDays = target.termDays || Math.round(target.expectedReturn / (target.amountInvested * currentRate)) || 4;
+      const profit = target.expectedReturn || (target.amountInvested * currentRate * termDays);
       const grossReturn = target.amountInvested + profit;
 
       setActiveInvestments((prev) => 
@@ -825,6 +841,19 @@ export default function App() {
         investedBalance: prev.investedBalance - target.amountInvested,
         earnedBalance: prev.earnedBalance + profit
       }));
+
+      setRegisteredUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u.email.toLowerCase() === wallet.email.toLowerCase()
+            ? {
+                ...u,
+                walletBalance: u.walletBalance + grossReturn,
+                investedBalance: u.investedBalance - target.amountInvested,
+                earnedBalance: u.earnedBalance + profit
+              }
+            : u
+        )
+      );
 
       setTransactions((prev) => [
         {
@@ -862,6 +891,18 @@ export default function App() {
         walletBalance: prev.walletBalance + dividendToClaim,
         earnedBalance: prev.earnedBalance + dividendToClaim
       }));
+
+      setRegisteredUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u.email.toLowerCase() === wallet.email.toLowerCase()
+            ? {
+                ...u,
+                walletBalance: u.walletBalance + dividendToClaim,
+                earnedBalance: u.earnedBalance + dividendToClaim
+              }
+            : u
+        )
+      );
 
       setTransactions((prev) => [
         {
@@ -942,6 +983,18 @@ export default function App() {
         walletBalance: prev.walletBalance - amount,
         withdrawnBalance: requireApproval ? prev.withdrawnBalance : prev.withdrawnBalance + amount
       }));
+
+      setRegisteredUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u.email.toLowerCase() === wallet.email.toLowerCase()
+            ? {
+                ...u,
+                walletBalance: u.walletBalance - amount,
+                withdrawnBalance: requireApproval ? u.withdrawnBalance : u.withdrawnBalance + amount
+              }
+            : u
+        )
+      );
 
       setTransactions(prev => [
         {
@@ -1125,11 +1178,22 @@ export default function App() {
       prev.map((inv) => {
         if (inv.id === invId && inv.status === 'pending') {
           const emailToUpdate = (inv.userEmail || '').toLowerCase() || 'jeremiahobazee11@gmail.com';
+          
+          // Update local session wallet if it matches the target
+          if (emailToUpdate === wallet.email.toLowerCase()) {
+            setWallet((p) => ({
+              ...p,
+              walletBalance: p.walletBalance - inv.amountInvested,
+              investedBalance: p.investedBalance + inv.amountInvested
+            }));
+          }
+
           setRegisteredUsers((prevUsers) =>
             prevUsers.map((u) => {
               if (u.email.toLowerCase() === emailToUpdate) {
                 return {
                   ...u,
+                  walletBalance: u.walletBalance - inv.amountInvested,
                   investedBalance: u.investedBalance + inv.amountInvested,
                 };
               }
@@ -1155,7 +1219,7 @@ export default function App() {
             ...inv,
             status: 'active' as const,
             startDate: simulatedTime,
-            endDate: simulatedTime + 4 * 24 * 60 * 60 * 1000,
+            endDate: simulatedTime + (inv.termDays || 10) * 24 * 60 * 60 * 1000,
             lastAccrualTime: simulatedTime,
           };
         }
@@ -1174,7 +1238,6 @@ export default function App() {
               if (u.email.toLowerCase() === emailToUpdate) {
                 return {
                   ...u,
-                  walletBalance: u.walletBalance + inv.amountInvested,
                 };
               }
               return u;
@@ -1188,7 +1251,7 @@ export default function App() {
                 return {
                   ...tx,
                   status: 'failed' as const,
-                  description: tx.description.replace(' (Awaiting Corporate Underwrite)', '') + ' (Placement Declined & Capital Restored)',
+                  description: tx.description.replace(' (Awaiting Corporate Underwrite)', '') + ' (Placement Declined by Executive Board)',
                 };
               }
               return tx;
@@ -1329,13 +1392,13 @@ export default function App() {
       
       const textLower = inputText.toLowerCase();
       if (textLower.includes('withdr') || textLower.includes('time') || textLower.includes('10am') || textLower.includes('hour') || textLower.includes('limit')) {
-        responseText = "I see you are inquiring about withdrawals! Please remember that all capital and 10% dividend withdrawals are approved between 10:00 AM and 12:00 PM daily. If the simulated time clock shows a different window, you can use the 'Virtual Time Machine' on the dashboard workspace to leap forward instantly and process your payout.";
+        responseText = "I see you are inquiring about withdrawals! Please remember that all capital and accrued dividend withdrawals are approved between 10:00 AM and 12:00 PM daily. If the simulated time clock shows a different window, you can use the 'Virtual Time Machine' on the dashboard workspace to leap forward instantly and process your payout.";
       } else if (textLower.includes('deposit') || textLower.includes('fund') || textLower.includes('paystack') || textLower.includes('pay')) {
         responseText = "Our payment gateway supports secure instant bank deposits. Transfers typically verify within 1 to 5 minutes. If you completed a deposit and are waiting for it to show, please click 'Simulate Referee Deposit' on the dashboard referral card, or contact us with your reference number.";
       } else if (textLower.includes('refer') || textLower.includes('ref') || textLower.includes('bonus') || textLower.includes('friend')) {
         responseText = "For every teammate you refer, you get ₦500.05 instantly. The bonus credits directly to your local wallet balance as soon as your referee starts any Lafarge concrete package investment (minimum ₦3,000). You can test this using the live 'Simulate Referee Deposit' button!";
-      } else if (textLower.includes('comp') || textLower.includes('interest') || textLower.includes('10%')) {
-        responseText = "Lafarge's 10% daily dividend packages roll over for 15 days down to 6 days depending on the option tier. Both your principal capital and the accrued profits automatically compound into another cycle, compounding your returns exponentially!";
+      } else if (textLower.includes('comp') || textLower.includes('interest') || textLower.includes('rate') || textLower.includes('percent')) {
+        responseText = "Lafarge's high-yield daily dividend packages (offering a flat 2.50% daily return across all option tiers) roll over for 15 days down to 6 days. Both your principal capital and the accrued profits automatically compound into another cycle, compounding your returns exponentially!";
       }
 
       setUserChatThreads(prev => {
@@ -1713,7 +1776,7 @@ export default function App() {
           >
             
             {/* Top Stats blocks */}
-            <StatsGrid wallet={wallet} onOpenModal={handleOpenModal} />
+            <StatsGrid wallet={wallet} onOpenModal={handleOpenModal} activeInvestments={activeInvestments} />
 
             {/* Claim Welcome Bonus Banner */}
             {!wallet.hasClaimedBonus ? (
@@ -1759,7 +1822,7 @@ export default function App() {
                       </span>
                     </h3>
                     <p className="text-xs text-gray-550 leading-relaxed font-semibold">
-                      Congratulations! Your shareholder wallet is now active. Fund your account and acquire shares or bonds to produce high-performance daily 10% dividends.
+                      Congratulations! Your shareholder wallet is now active. Fund your account and acquire shares or bonds to produce high-performance high-yield daily dividends.
                     </p>
                   </div>
                 </div>
@@ -1878,7 +1941,7 @@ export default function App() {
           >
             <div className="border-b border-green-150 pb-5">
               <h2 className="text-2xl md:text-3xl font-display font-black text-gray-950 tracking-tight">Cement Production Stock Options</h2>
-              <p className="text-sm text-gray-500 mt-1 max-w-xl">Acquire shares in Nigeria's leading building material assets. Get an immediate 10% daily dividend payoff with options ranging from 15 days down to 6 days.</p>
+              <p className="text-sm text-gray-500 mt-1 max-w-xl">Acquire shares in Nigeria's leading building material assets. Get an immediate 2.50% daily dividend payoff with options ranging from 15 days down to 6 days.</p>
             </div>
 
             {/* Product card matrix */}
@@ -1905,7 +1968,7 @@ export default function App() {
           >
             <div className="border-b border-green-150 pb-5">
               <h2 className="text-2xl md:text-3xl font-display font-black text-gray-950 tracking-tight">Compound Option Projections</h2>
-              <p className="text-sm text-gray-500 mt-1 max-w-xl">Simulate Lafarge corporate options compounding velocity. Drag your capital stake slider below and witness high-volume rollover growth at exactly 60.0% every 4 days.</p>
+              <p className="text-sm text-gray-500 mt-1 max-w-xl">Simulate Lafarge corporate options compounding velocity. Drag your capital stake slider below and witness high-volume rollover growth at exactly 10.0% daily dynamically for the total duration of each package.</p>
             </div>
 
             <Calculator />
@@ -1931,8 +1994,8 @@ export default function App() {
                   a: 'Yes. This simulated share options portal models equity allocations in dry kilns, eco-binders, and quarry processing lines across Ewekoro, Sagamu, Mfamosing, and Ashaka plants, with security and financial controls supported by the Huaxin Cement Group.'
                 },
                 {
-                  q: 'How does the 10% daily dividend payout work?',
-                  a: 'For every day your chosen cement position remains active, you accumulate 10% of your initial position value (e.g., ₦300 daily on ₦3,000 minimum). These yields accumulate in real-time, allowing you to withdraw them daily to your liquid cash balance, or roll them forward compounding up!'
+                  q: 'How does the daily dividend payout work?',
+                  a: 'For every day your chosen cement position remains active, you accumulate high-yield daily returns of 2.50% of your initial position value (e.g., ₦75 daily on ₦3,000 Ewekoro Starter allocation). These yields accumulate in real-time, allowing you to withdraw them daily to your liquid cash balance, or roll them forward compounding up!'
                 },
                 {
                   q: 'What is the lock-in period for cement shares?',
@@ -2040,7 +2103,7 @@ export default function App() {
                   <div className="flex flex-wrap gap-1.5">
                     {[
                       { text: 'Why is withdrawal closed?', search: 'When is withdrawal open?' },
-                      { text: 'Explain 10% Daily return', search: 'How does 10% daily returns work?' },
+                      { text: 'Explain dynamic returns', search: 'How do daily returns work?' },
                       { text: 'Where is my referral link?', search: 'How do I refer friends to get N500?' },
                       { text: 'How to roll over packages?', search: 'How do I compound?' }
                     ].map((item, idx) => (

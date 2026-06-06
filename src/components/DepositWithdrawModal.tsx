@@ -42,6 +42,7 @@ export default function DepositWithdrawModal({
   
   const [step, setStep] = useState<1 | 2 | 3>(1); // 1: input, 2: processing/payment, 3: success receipt
   const [copied, setCopied] = useState(false);
+  const [copiedAcc, setCopiedAcc] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   
@@ -53,6 +54,13 @@ export default function DepositWithdrawModal({
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCopyAcc = (e: React.MouseEvent | undefined, text: string) => {
+    if (e) e.stopPropagation();
+    navigator.clipboard.writeText(text);
+    setCopiedAcc(text);
+    setTimeout(() => setCopiedAcc(null), 2000);
   };
 
   const validateStep1 = () => {
@@ -196,13 +204,13 @@ export default function DepositWithdrawModal({
 
   return (
     <div className="fixed inset-0 bg-[#062817]/60 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300">
-      <div className="bg-white border border-green-100 rounded-2xl w-full max-w-md shadow-2xl relative overflow-hidden transition-all duration-300 transform scale-100">
+      <div className="bg-white border border-green-100 rounded-2xl w-full max-w-md shadow-2xl relative flex flex-col max-h-[90vh] overflow-hidden transition-all duration-300 transform scale-100">
         
         {/* Top Accent bar using Lafarge Green */}
-        <div className="h-2 bg-[#028A34] w-full" />
+        <div className="h-2 bg-[#028A34] w-full shrink-0" />
 
         {/* Header */}
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0 border-slate-100/80">
           <div>
             <span className="text-xs uppercase tracking-wider font-semibold text-green-700 bg-green-50 px-2.5 py-1 rounded-full">
               {type === 'deposit' ? 'Lafarge Capital Deposit' : 'Secured Earnings Payout'}
@@ -220,13 +228,15 @@ export default function DepositWithdrawModal({
           </button>
         </div>
 
-        {/* Errors and warnings info */}
-        {errorMessage && (
-          <div className="mx-6 mt-4 p-3.5 bg-rose-50 border border-rose-100 rounded-xl flex items-start gap-2.5 text-rose-700 text-sm">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <p className="font-medium">{errorMessage}</p>
-          </div>
-        )}
+        {/* Scrollable body content */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {/* Errors and warnings info */}
+          {errorMessage && (
+            <div className="mx-6 mt-4 p-3.5 bg-rose-50 border border-rose-100 rounded-xl flex items-start gap-2.5 text-rose-700 text-sm">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <p className="font-medium">{errorMessage}</p>
+            </div>
+          )}
 
         {/* Step 1: Input Amount and Select Method */}
         {step === 1 && (
@@ -365,40 +375,49 @@ export default function DepositWithdrawModal({
               <div className="space-y-3.5 animate-fade-in text-left">
                 <span className="text-[10px] font-black text-green-700 uppercase tracking-widest block font-sans">Select Lafarge Escrow Deposit Bank Channel</span>
                 <div className="space-y-3">
-                  {depositAccounts && depositAccounts.filter(a => a.isActive).map((acc, index) => (
-                    <div key={acc.id} className="p-4 bg-gray-50 border border-green-150/60 rounded-xl space-y-2 relative shadow-xs">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-extrabold text-[#028A34]">{acc.bankName}</span>
-                        <span className="px-2 py-0.5 bg-green-100 text-green-800 text-[8px] font-black uppercase rounded-md tracking-wider">
-                          Active Channel #{index + 1}
-                        </span>
-                      </div>
-                      <div className="space-y-1 text-xs text-slate-700">
-                        <p className="flex justify-between">
-                          <span className="text-gray-400 font-semibold">Account Name:</span>
-                          <strong className="text-gray-900 font-semibold">{acc.accountName}</strong>
-                        </p>
-                        <p className="flex justify-between items-center">
-                          <span className="text-gray-400 font-semibold">Account Number:</span>
-                          <span className="font-mono text-gray-900 font-extrabold flex items-center gap-1">
-                            {acc.accountNumber}
-                            <button
-                              type="button"
-                              onClick={() => handleCopy(acc.accountNumber)}
-                              className="p-1 hover:bg-slate-200 text-slate-500 rounded cursor-pointer transition-colors"
-                              title="Copy"
-                            >
-                              {copied ? <Check className="w-3.5 h-3.5 text-[#028A34]" /> : <Copy className="w-3.5 h-3.5" />}
-                            </button>
+                  {depositAccounts && depositAccounts.filter(a => a.isActive).map((acc, index) => {
+                    const isAccCopied = copiedAcc === acc.accountNumber;
+                    return (
+                      <div 
+                        key={acc.id} 
+                        onClick={() => handleCopyAcc(undefined, acc.accountNumber)}
+                        className={`p-4 bg-gray-50 border rounded-xl space-y-2 relative shadow-xs cursor-pointer transition-all hover:bg-green-50/20 active:scale-[0.99] select-none text-left ${
+                          isAccCopied ? 'border-green-500 ring-1 ring-green-400 bg-green-50/10' : 'border-green-150/60 hover:border-green-400'
+                        }`}
+                        title="Click anywhere on card to copy account number"
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-extrabold text-[#028A34]">{acc.bankName}</span>
+                          <span className="px-2 py-0.5 bg-green-100 text-green-800 text-[8px] font-black uppercase rounded-md tracking-wider font-mono">
+                            Active Channel #{index + 1}
                           </span>
-                        </p>
-                        <p className="flex justify-between">
-                          <span className="text-gray-400 font-semibold">Reference code:</span>
-                          <strong className="text-green-700 font-mono font-black">LAFARGE-DEP-{amount}</strong>
-                        </p>
+                        </div>
+                        <div className="space-y-1 text-xs text-slate-705">
+                          <p className="flex justify-between mb-1.5">
+                            <span className="text-gray-400 font-semibold">Account Name:</span>
+                            <strong className="text-gray-900 font-semibold">{acc.accountName}</strong>
+                          </p>
+                          <div className="flex justify-between items-center bg-white border border-gray-150 p-2 rounded-xl mt-1.5 shadow-2xs">
+                            <span className="text-gray-400 font-bold text-[10px] uppercase tracking-wider">Account Number:</span>
+                            <span className="font-mono text-gray-900 font-black flex items-center gap-1.5 bg-gray-50/70 border border-gray-200/60 px-2.5 py-1 rounded-lg text-xs leading-none">
+                              {acc.accountNumber}
+                              {isAccCopied ? (
+                                <span className="flex items-center gap-1 text-[10px] text-green-700 font-black tracking-wide">
+                                  <Check className="w-3.5 h-3.5 text-green-600 shrink-0" /> Copied!
+                                </span>
+                              ) : (
+                                <Copy className="w-3.5 h-3.5 text-gray-400 hover:text-green-700 shrink-0 cursor-pointer" />
+                              )}
+                            </span>
+                          </div>
+                          <p className="flex justify-between pt-1">
+                            <span className="text-gray-400 font-semibold">Reference code:</span>
+                            <strong className="text-green-700 font-mono font-black border border-green-200/55 px-1.5 py-0.5 rounded bg-green-50/10">LAFARGE-DEP-{amount}</strong>
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {(!depositAccounts || depositAccounts.filter(a => a.isActive).length === 0) && (
                     <div className="p-4 text-center border border-dashed border-gray-200 rounded-xl text-xs text-gray-400 font-bold">
                       No active bank transfer channels currently set up by Admin. Please try alternative payment methods or report to customer care.
@@ -621,6 +640,7 @@ export default function DepositWithdrawModal({
             </button>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

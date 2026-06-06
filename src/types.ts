@@ -43,6 +43,7 @@ export interface ActiveInvestment {
   isCompounding: boolean;
   userEmail?: string;
   termDays?: number;
+  rate?: number;
 }
 
 export interface Transaction {

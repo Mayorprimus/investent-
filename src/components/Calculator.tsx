@@ -12,7 +12,7 @@ export default function Calculator() {
   const qualifiedProducts = [...productsList].filter(p => calcAmount >= p.minAmount);
   const matchingProduct = qualifiedProducts.length > 0 ? qualifiedProducts[qualifiedProducts.length - 1] : productsList[0];
   const termDays = matchingProduct.termDays;
-  const returnRatePerCycle = 0.10 * termDays; 
+  const returnRatePerCycle = matchingProduct.rate * termDays; 
   
   // Calculate standard profit
   const standardReturn = calcAmount * returnRatePerCycle * cycles;
@@ -95,7 +95,7 @@ export default function Calculator() {
             <div className="space-y-1">
               <span className="text-xs font-extrabold text-green-900 uppercase tracking-wide block font-sans">Compounding Factor: {(1 + returnRatePerCycle).toFixed(2)}x Per Turn</span>
               <p className="text-[11px] text-gray-450 leading-relaxed font-semibold font-sans">
-                By enabling rollover compounding, your 10% daily dividends are automatically folded back into your holdings. At {(returnRatePerCycle * 100).toFixed(0)}% term gain per {termDays} days, your capital grows geometrically, delivering extreme asset compounding.
+                By enabling rollover compounding, your daily dividends are automatically folded back into your holdings. At {(returnRatePerCycle * 100).toFixed(1)}% term gain per {termDays} days, your capital grows geometrically, delivering extreme asset compounding.
               </p>
             </div>
           </div>

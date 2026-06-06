@@ -1,0 +1,181 @@
+{
+  "version": 1,
+  "registeredUsers": [
+    {
+      "fullName": "Jeremiah Obazee",
+      "email": "jeremiahobazee11@gmail.com",
+      "walletBalance": 120000,
+      "investedBalance": 30000,
+      "withdrawnBalance": 4500,
+      "earnedBalance": 4500,
+      "accountNumber": "NG-ACC-1013449104",
+      "referralCode": "LAF-OBAZEE-2026",
+      "referralsCount": 4,
+      "referralEarnings": 2000,
+      "hasClaimedBonus": true,
+      "password": "2026",
+      "isFlagged": false,
+      "requireReferralToWithdraw": false,
+      "requireReferralDepositToWithdraw": false
+    },
+    {
+      "fullName": "Chioma Adebayo",
+      "email": "chioma.a@demoland.com",
+      "walletBalance": 45000,
+      "investedBalance": 0,
+      "withdrawnBalance": 0,
+      "earnedBalance": 0,
+      "accountNumber": "NG-ACC-2094810293",
+      "referralCode": "LAF-CHIOMA-992",
+      "referralsCount": 0,
+      "referralEarnings": 0,
+      "hasClaimedBonus": true,
+      "password": "1234",
+      "isFlagged": false,
+      "requireReferralToWithdraw": false,
+      "requireReferralDepositToWithdraw": false
+    },
+    {
+      "fullName": "Emeka Okafor",
+      "email": "emeka.o@demoland.com",
+      "walletBalance": 98000,
+      "investedBalance": 50000,
+      "withdrawnBalance": 12000,
+      "earnedBalance": 12000,
+      "accountNumber": "NG-ACC-3049182041",
+      "referralCode": "LAF-EMEKA-105",
+      "referralsCount": 2,
+      "referralEarnings": 1000,
+      "hasClaimedBonus": true,
+      "password": "1234",
+      "isFlagged": false,
+      "requireReferralToWithdraw": false,
+      "requireReferralDepositToWithdraw": false
+    }
+  ],
+  "transactions": [
+    {
+      "id": "tx-initial-deployment",
+      "type": "invest",
+      "amount": 30000,
+      "status": "completed",
+      "date": 1780653403784,
+      "reference": "TX-LAF9086",
+      "description": "Acquired Ewekoro Dry Kiln Share Options",
+      "userEmail": "jeremiahobazee11@gmail.com"
+    },
+    {
+      "id": "tx-dividend-claim-prev",
+      "type": "payout",
+      "amount": 4500,
+      "status": "completed",
+      "date": 1780696603784,
+      "reference": "TX-EARN451",
+      "description": "Withdrew Day 1 Lafarge Stock Dividend",
+      "userEmail": "jeremiahobazee11@gmail.com"
+    },
+    {
+      "id": "tx-initial-deposit",
+      "type": "deposit",
+      "amount": 154500,
+      "status": "completed",
+      "date": 1780610203784,
+      "reference": "TX-ACC-PAYSTACK",
+      "description": "Funded account via paystack gateway",
+      "userEmail": "jeremiahobazee11@gmail.com"
+    }
+  ],
+  "activeInvestments": [
+    {
+      "id": "inv-initial-share-pack",
+      "title": "Ewekoro Dry Kiln Option",
+      "rate": "2.5%",
+      "type": "daily",
+      "cycle": "11 Days",
+      "amountInvested": 30000,
+      "startDate": 1780653403784,
+      "endDate": 1781603803784,
+      "lastAccrualTime": 1780653403784,
+      "status": "active",
+      "totalAccrued": 750,
+      "expectedReturn": 8250,
+      "isCompounding": true,
+      "termDays": 11,
+      "userEmail": "jeremiahobazee11@gmail.com"
+    }
+  ],
+  "depositAccounts": [
+    {
+      "id": "da-opay-default",
+      "bankName": "OPay",
+      "accountName": "Lafarge Africa Option Escrow Ledger",
+      "accountNumber": "8158432605",
+      "isActive": true
+    },
+    {
+      "id": "da-1",
+      "bankName": "Access International Bank PLC",
+      "accountName": "Lafarge Africa Plc Option Escrow Ledger",
+      "accountNumber": "1019014197",
+      "isActive": true
+    },
+    {
+      "id": "da-2",
+      "bankName": "OPay Digital Ltd (Escrow)",
+      "accountName": "Lafarge Africa Hub Escrow Holdings",
+      "accountNumber": "9082914104",
+      "isActive": true
+    },
+    {
+      "id": "da-3",
+      "bankName": "Moniepoint Microfinance Bank",
+      "accountName": "Lafarge Treasury Premium Africa",
+      "accountNumber": "5039294103",
+      "isActive": true
+    }
+  ],
+  "csTickets": [
+    {
+      "id": "TCK-924401",
+      "userEmail": "jeremiahobazee11@gmail.com",
+      "userFullName": "Obazee Jeremiah",
+      "category": "Deposit Upgrade",
+      "subject": "Paystack transfer delay verification",
+      "status": "resolved",
+      "date": 1780567003784,
+      "messages": [
+        {
+          "id": "msg_1",
+          "sender": "user",
+          "text": "Hello admin, I updated my deposit package via direct bank ledger option but wait time exceeds 30 minutes, kindly check status.",
+          "time": "2 days ago"
+        },
+        {
+          "id": "msg_2",
+          "sender": "agent",
+          "text": "Hello Mr. Jeremiah, we appreciate your patience. The transaction reference check indicates a bank gateway settlement delay. We managed to bypass this and immediately credited your wallet capital with ₦154,500.00.",
+          "time": "1 day ago"
+        }
+      ]
+    }
+  ],
+  "userChatThreads": {
+    "jeremiahobazee11@gmail.com": [
+      {
+        "sender": "user",
+        "text": "Hello support, looking to find active details on high leverage option contracts.",
+        "time": "Just now"
+      }
+    ]
+  },
+  "referrals": [],
+  "adminApprovalSettings": {
+    "requireDepositApproval": true,
+    "requireInvestmentApproval": true,
+    "requireWithdrawalApproval": true,
+    "customReferralLink": "",
+    "isReferralLinkStatic": false,
+    "csNumber": "08158432605",
+    "officialWhatsAppGroup": "https://chat.whatsapp.com/KHZgCi1h24154DqIIHz3VE"
+  }
+}

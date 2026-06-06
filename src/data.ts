@@ -7,7 +7,7 @@ export const productsList: InvestmentProduct[] = [
     description: 'Direct exposure to Ogun State clinker wet/dry kiln supply lines. Fits first-time allocations perfectly.',
     minAmount: 3000,
     maxAmount: 3000,
-    rate: 0.10,
+    rate: 0.025,
     termDays: 15,
     riskLevel: 'Low',
     category: 'Industrial Share'
@@ -18,7 +18,7 @@ export const productsList: InvestmentProduct[] = [
     description: 'Underpinned by high-performance low-carbon masonry and alternative builders. Eco-friendly growth asset.',
     minAmount: 5000,
     maxAmount: 5000,
-    rate: 0.10,
+    rate: 0.025,
     termDays: 14,
     riskLevel: 'Low',
     category: 'Green Tech'
@@ -29,7 +29,7 @@ export const productsList: InvestmentProduct[] = [
     description: 'Regional Gombe State fuel cost conversion programs delivering boosted operational savings dividends.',
     minAmount: 10000,
     maxAmount: 10000,
-    rate: 0.10,
+    rate: 0.025,
     termDays: 13,
     riskLevel: 'Low',
     category: 'Energy Option'
@@ -40,7 +40,7 @@ export const productsList: InvestmentProduct[] = [
     description: 'Calabar-based high-purity limestone aggregate reserves feeding regional construction centers.',
     minAmount: 20000,
     maxAmount: 20000,
-    rate: 0.10,
+    rate: 0.025,
     termDays: 12,
     riskLevel: 'Low',
     category: 'Quarry Option'
@@ -51,7 +51,7 @@ export const productsList: InvestmentProduct[] = [
     description: 'Strategic port expansion silos enabling massive bulk clinker marine offloading and dry-bulk shipping.',
     minAmount: 30000,
     maxAmount: 30000,
-    rate: 0.10,
+    rate: 0.025,
     termDays: 11,
     riskLevel: 'Moderate',
     category: 'Logistics Share'
@@ -62,7 +62,7 @@ export const productsList: InvestmentProduct[] = [
     description: 'Strategic automated concrete batching plants powering skyscraper foundations along the Lekki corridor.',
     minAmount: 50000,
     maxAmount: 50000,
-    rate: 0.10,
+    rate: 0.025,
     termDays: 10,
     riskLevel: 'Moderate',
     category: 'Municipal Bond'
@@ -73,7 +73,7 @@ export const productsList: InvestmentProduct[] = [
     description: 'High-poured premium concrete contracts for capital city freeway interchanges and arterial structures.',
     minAmount: 100000,
     maxAmount: 100000,
-    rate: 0.10,
+    rate: 0.025,
     termDays: 9,
     riskLevel: 'Moderate',
     category: 'Institutional Bond'
@@ -84,7 +84,7 @@ export const productsList: InvestmentProduct[] = [
     description: 'Operational automation upgrades collateralized directly by Lafarge’s parent group: Huaxin Cement.',
     minAmount: 150000,
     maxAmount: 150000,
-    rate: 0.10,
+    rate: 0.025,
     termDays: 8,
     riskLevel: 'Moderate',
     category: 'Corporate Option'
@@ -95,7 +95,7 @@ export const productsList: InvestmentProduct[] = [
     description: 'Industrial transition scheme substituting local agricultural biowaste for heavy fossil fuels in multi-tier kilns.',
     minAmount: 250000,
     maxAmount: 250000,
-    rate: 0.10,
+    rate: 0.025,
     termDays: 7,
     riskLevel: 'High',
     category: 'Sovereign Option'
@@ -106,7 +106,7 @@ export const productsList: InvestmentProduct[] = [
     description: 'High-velocity nationwide clinker factory expansions backed by robust manufacturing assets and reserves.',
     minAmount: 500000,
     maxAmount: 500000,
-    rate: 0.10,
+    rate: 0.025,
     termDays: 6,
     riskLevel: 'High',
     category: 'Global Bond'
@@ -116,7 +116,7 @@ export const productsList: InvestmentProduct[] = [
 export const faqList = [
   {
     question: 'How do the Lafarge stock investment returns work?',
-    answer: 'Once you acquire shares or bonds in any of our production facilities (like Ewekoro or Mfamosing), your funds are deployed. For every day, you receive a guaranteed 10% daily dividend payout (e.g., ₦300 daily on a ₦3,000 minimum). This continues for the duration of the chosen term (ranging from 15 days for Ewekoro Starter down to 6 days for Expansion Bonds), compiling high cumulative profit, after which your initial capital is released.'
+    answer: 'Once you acquire shares or bonds in any of our production facilities (like Ewekoro or Mfamosing), your funds are deployed. For every day, you receive a guaranteed outstanding daily dividend payout of 2.50% daily (e.g., ₦75 daily on a ₦3,000 minimum allocation). This continues for the duration of the chosen term (ranging from 15 days for Ewekoro Starter down to 6 days for Expansion Bonds), compiling high cumulative profit, after which your initial capital is released.'
   },
   {
     question: 'Is compounding available for these shares?',

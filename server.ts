@@ -103,7 +103,7 @@ async function startServer() {
     {
       id: 'inv-initial-share-pack',
       title: 'Ewekoro Dry Kiln Option',
-      rate: '10%',
+      rate: '2.5%',
       type: 'daily' as const,
       cycle: '11 Days',
       amountInvested: 30000,
@@ -111,8 +111,8 @@ async function startServer() {
       endDate: Date.now() + 10 * 24 * 60 * 60 * 1000,
       lastAccrualTime: Date.now() - 1 * 24 * 60 * 60 * 1000,
       status: 'active' as const,
-      totalAccrued: 3000,
-      expectedReturn: 33000,
+      totalAccrued: 750,
+      expectedReturn: 8250,
       isCompounding: true,
       termDays: 11,
       userEmail: 'jeremiahobazee11@gmail.com'

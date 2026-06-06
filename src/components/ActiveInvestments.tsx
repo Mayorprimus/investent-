@@ -52,7 +52,7 @@ export default function ActiveInvestments({
           <h3 className="text-lg font-bold text-gray-950 font-sans flex items-center gap-2">
             <Clock className="w-5 h-5 text-green-600" /> Lafarge Stock Portfolio
           </h3>
-          <p className="text-xs text-gray-400 font-medium">Track your cement production allocations yielding 10% daily dividends.</p>
+          <p className="text-xs text-gray-400 font-medium">Track your cement production allocations yielding premium daily dividends.</p>
         </div>
         <span className="text-xs font-bold text-[#028A34] bg-green-50 border border-green-150 px-3 py-1.5 rounded-full inline-block self-start">
           {activeInvestmentsList.length} Active Position{activeInvestmentsList.length === 1 ? '' : 's'}
@@ -91,7 +91,7 @@ export default function ActiveInvestments({
           </div>
           <div className="space-y-1">
             <h4 className="font-bold text-gray-900 text-sm">No Active Positions</h4>
-            <p className="text-xs text-gray-400">You do not hold any Lafarge shares right now. Acquire shares or bonds to start receiving daily dividends of 10% (₦300 daily per ₦3,000).</p>
+            <p className="text-xs text-gray-400 flex flex-col md:inline">You do not hold any Lafarge shares right now. Acquire shares or bonds to start receiving daily dividends of 2.50% (e.g., ₦75 daily per ₦3,000).</p>
           </div>
           <button
             id="btn-no-invest-shortcut"
@@ -104,11 +104,12 @@ export default function ActiveInvestments({
       ) : (
         <div className="space-y-5">
           {activeInvestmentsList.map((inv) => {
-            const termDays = inv.termDays || Math.round(inv.expectedReturn / (inv.amountInvested * 0.10)) || 4;
+            const currentRate = inv.rate || 0.10;
+            const termDays = inv.termDays || Math.round(inv.expectedReturn / (inv.amountInvested * currentRate)) || 4;
             const progress = getProgress(inv);
             const isMatured = inv.status === 'matured' || simulatedTime >= inv.endDate;
-            const dailyYield = inv.amountInvested * 0.10;
-            const fullPotentialYield = inv.expectedReturn || (inv.amountInvested * 0.10 * termDays);
+            const dailyYield = inv.amountInvested * currentRate;
+            const fullPotentialYield = inv.expectedReturn || (inv.amountInvested * currentRate * termDays);
 
             return (
               <div 
@@ -202,7 +203,7 @@ export default function ActiveInvestments({
                     </label>
                     <div className="leading-tight">
                       <span className="text-xs font-bold text-gray-900 block">Auto-Rollover Reinvest (Always On)</span>
-                      <p className="text-[10px] text-gray-400 font-semibold">Automatically restart {termDays}-day cycle at +{(termDays * 10).toFixed(0)}%</p>
+                      <p className="text-[10px] text-gray-400 font-semibold">Automatically restart {termDays}-day cycle at +{(termDays * currentRate * 100).toFixed(1)}% gain</p>
                     </div>
                   </div>
 
@@ -213,12 +214,12 @@ export default function ActiveInvestments({
                       onClick={() => onClaim(inv.id)}
                       className="w-full sm:w-auto px-5 py-2.5 bg-[#028A34] hover:bg-[#027029] text-white text-xs font-bold rounded-xl shadow-md cursor-pointer transition-all flex items-center justify-center gap-1.5"
                     >
-                      Withdraw Capital & 10% Daily Profits (₦{formatNGN(fullPotentialYield)})
+                      Withdraw Capital & Daily Profits (₦{formatNGN(fullPotentialYield)})
                       <ArrowUpRight className="w-4 h-4" />
                     </button>
                   ) : (
                     <div className="text-[11px] text-amber-600 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 font-black flex items-center gap-1.5">
-                      <HelpCircle className="w-4 h-4 text-amber-500 shrink-0" /> Cumulative 10% daily dividends locked in {termDays}-day package cycle. Withdraws available upon maturity.
+                      <HelpCircle className="w-4 h-4 text-amber-500 shrink-0" /> Cumulative daily dividends locked in {termDays}-day package cycle. Withdraws available upon maturity.
                     </div>
                   )}
                 </div>
