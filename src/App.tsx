@@ -678,7 +678,25 @@ export default function App() {
       // Scan and mutate maturing/accumulating investments
       setActiveInvestments((prevInvestments) => {
         const userEarnings: Record<string, number> = {};
+        const referrerCommissions: Record<string, number> = {};
         let newTransactions: Transaction[] = [];
+
+        // Pre-build referee to referrer map based on current registered users
+        const refereeReferrerMap: Record<string, { referrerEmail: string, refereeName: string }> = {};
+        registeredUsers.forEach((usr) => {
+          if (usr.referredBy) {
+            const code = usr.referredBy.trim().toLowerCase();
+            const referrer = registeredUsers.find(
+              (r) => r.referralCode?.trim().toLowerCase() === code
+            );
+            if (referrer) {
+              refereeReferrerMap[usr.email.toLowerCase()] = {
+                referrerEmail: referrer.email.toLowerCase(),
+                refereeName: usr.fullName
+              };
+            }
+          }
+        });
 
         const updatedList = prevInvestments.map((inv) => {
           if (inv.status !== 'active') return inv;
@@ -692,9 +710,18 @@ export default function App() {
           const currentRate = workingInv.rate || 0.10;
           const termDays = workingInv.termDays || Math.round(workingInv.expectedReturn / (workingInv.amountInvested * currentRate)) || 4;
           
+          let refereeYieldThisJump = 0;
+
+          // Calculate old elapsed days to find the change during this jump
+          const oldElapsedMs = prevTime - inv.startDate;
+          const oldElapsedDays = Math.floor(Math.max(0, oldElapsedMs) / (24 * 60 * 60 * 1000));
+          const oldCappedDays = Math.min(termDays, Math.max(0, oldElapsedDays));
+          const oldAccrued = inv.amountInvested * currentRate * oldCappedDays;
+
           while (newTime >= workingInv.endDate) {
             const cycleProfit = workingInv.amountInvested * currentRate * termDays;
             userEarnings[email] += cycleProfit;
+            refereeYieldThisJump += cycleProfit;
 
             if (workingInv.isCompounding) {
               // Roll over BOTH principal and profit for next term cycle
@@ -742,6 +769,37 @@ export default function App() {
             const elapsedDays = Math.floor(elapsedMs / (24 * 60 * 60 * 1000));
             const cappedDays = Math.min(termDays, Math.max(0, elapsedDays));
             workingInv.totalAccrued = workingInv.amountInvested * currentRate * cappedDays;
+
+            // Compute part yield accrued during the non-rollover portion of this jump
+            if (workingInv.startDate === inv.startDate) {
+              const diff = Math.max(0, workingInv.totalAccrued - oldAccrued);
+              refereeYieldThisJump += diff;
+            } else {
+              refereeYieldThisJump += workingInv.totalAccrued;
+            }
+          }
+
+          // Distribute 0.5% daily referral bonus commission to referrer!
+          if (refereeYieldThisJump > 0) {
+            const refData = refereeReferrerMap[email];
+            if (refData) {
+              const commAmount = refereeYieldThisJump * 0.005;
+              if (commAmount > 0.001) {
+                const rEmail = refData.referrerEmail;
+                referrerCommissions[rEmail] = (referrerCommissions[rEmail] || 0) + commAmount;
+
+                newTransactions.push({
+                  id: `tx-ref-daily-comm-${Math.random().toString(36).substring(2, 9)}`,
+                  type: 'payout',
+                  amount: commAmount,
+                  status: 'completed',
+                  date: newTime,
+                  reference: generateRef(),
+                  description: `Daily Referral Commission (0.5%): ₦${commAmount.toFixed(2)} from referee ${refData.refereeName}'s active stock position yield!`,
+                  userEmail: rEmail
+                });
+              }
+            }
           }
 
           return workingInv;
@@ -752,17 +810,28 @@ export default function App() {
           prevUsers.map((u) => {
             const email = u.email.toLowerCase();
             const earnedAdd = userEarnings[email] || 0;
+            const commAdd = referrerCommissions[email] || 0;
+            
             const userActiveInvests = updatedList.filter(
               (i) => i.status === 'active' && (i.userEmail || '').toLowerCase() === email
             );
             const deltaActive = userActiveInvests.reduce((sum, i) => sum + i.amountInvested, 0);
 
-            if (earnedAdd > 0 || u.investedBalance !== deltaActive) {
-              return {
+            if (earnedAdd > 0 || commAdd > 0 || u.investedBalance !== deltaActive) {
+              const nextU = {
                 ...u,
-                earnedBalance: u.earnedBalance + earnedAdd,
+                walletBalance: u.walletBalance + commAdd,
+                earnedBalance: u.earnedBalance + earnedAdd + commAdd,
+                referralEarnings: u.referralEarnings + commAdd,
                 investedBalance: deltaActive
               };
+
+              // Explicitly sync current logged-in user's wallet
+              if (wallet && wallet.email.toLowerCase() === email) {
+                setWallet(nextU);
+              }
+
+              return nextU;
             }
             return u;
           })
