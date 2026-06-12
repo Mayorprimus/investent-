@@ -383,6 +383,10 @@ export default function AuthScreen({
                     </div>
                   </div>
 
+                  <p className="text-[10px] text-[#028A34] bg-emerald-50/55 p-2 rounded-xl font-bold leading-normal text-left">
+                    💡 Registered receiving bank details can be easily changed/updated at any time from your Profile Settings inside your member dashboard.
+                  </p>
+
                   <div>
                     <label className="block text-[10px] uppercase font-black text-slate-550 tracking-wider mb-1.5 flex items-center gap-1.5">
                       <Lock className="w-3.5 h-3.5 text-slate-400" /> Choose Security Pass PIN

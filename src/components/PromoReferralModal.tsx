@@ -92,11 +92,25 @@ export default function PromoReferralModal({ isOpen, onClose, wallet, adminAppro
                   Registration Bonus Active
                 </span>
                 <h3 className="text-lg font-black text-gray-950 font-display tracking-tight leading-tight">
-                  Unlock ₦500.00 Referrals!
+                  Unlock ₦500.00 Referrals + 5-Level Comms!
                 </h3>
                 <p className="text-[11px] text-gray-500 font-semibold max-w-xs mx-auto leading-relaxed">
-                  Every user you invite credits your balance with <strong className="text-green-800">₦500.00</strong> when they start a cement options package.
+                  Every user you invite credits your balance with <strong className="text-green-800">₦500.00</strong> setup bonus. 
+                  Plus, unlock up to <strong className="text-emerald-700">5 levels of daily network commission</strong> starting from 1.0% (Level 1) up to 5.0% (Level 5) as your referral footprint expands!
                 </p>
+              </div>
+
+              {/* Payment Account Notice Indicator */}
+              <div className="p-3 bg-amber-50/70 border border-amber-150 rounded-xl text-left">
+                <div className="flex gap-2 items-start text-xs font-bold text-amber-950">
+                  <span className="w-5 h-5 rounded-lg bg-amber-100 text-amber-800 text-[10px] shrink-0 font-extrabold flex items-center justify-center">Bank</span>
+                  <div className="space-y-0.5">
+                    <span>Change Payment Account Choice</span>
+                    <p className="text-[10px] text-amber-700 font-medium leading-normal">
+                      Did you enter wrong bank details? You can easily adjust or change your receiving bank brand or account number at any time via your dashboard <strong>Profile Settings</strong>.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {/* Your Personal Referral Code / Card */}

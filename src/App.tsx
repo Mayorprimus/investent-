@@ -698,6 +698,47 @@ export default function App() {
           }
         });
 
+        // Precompute multi-level referral counts for all registered users (needed for level unlock thresholds)
+        const userNetworkCounts: Record<string, { lv1: number; lv2: number; lv3: number; lv4: number; lv5: number }> = {};
+        registeredUsers.forEach((usr) => {
+          const emailLower = usr.email.toLowerCase();
+          const codeNormalized = (usr.referralCode || '').trim().toLowerCase();
+          if (!codeNormalized) {
+            userNetworkCounts[emailLower] = { lv1: 0, lv2: 0, lv3: 0, lv4: 0, lv5: 0 };
+            return;
+          }
+          
+          const lv1Users = registeredUsers.filter(u => u.referredBy?.trim().toLowerCase() === codeNormalized);
+          const lv2Users = registeredUsers.filter(u => {
+            if (!u.referredBy) return false;
+            const refByCode = u.referredBy.trim().toLowerCase();
+            return lv1Users.some(l1 => l1.referralCode.trim().toLowerCase() === refByCode);
+          });
+          const lv3Users = registeredUsers.filter(u => {
+            if (!u.referredBy) return false;
+            const refByCode = u.referredBy.trim().toLowerCase();
+            return lv2Users.some(l2 => l2.referralCode.trim().toLowerCase() === refByCode);
+          });
+          const lv4Users = registeredUsers.filter(u => {
+            if (!u.referredBy) return false;
+            const refByCode = u.referredBy.trim().toLowerCase();
+            return lv3Users.some(l3 => l3.referralCode.trim().toLowerCase() === refByCode);
+          });
+          const lv5Users = registeredUsers.filter(u => {
+            if (!u.referredBy) return false;
+            const refByCode = u.referredBy.trim().toLowerCase();
+            return lv4Users.some(l4 => l4.referralCode.trim().toLowerCase() === refByCode);
+          });
+          
+          userNetworkCounts[emailLower] = {
+            lv1: lv1Users.length,
+            lv2: lv2Users.length,
+            lv3: lv3Users.length,
+            lv4: lv4Users.length,
+            lv5: lv5Users.length
+          };
+        });
+
         const updatedList = prevInvestments.map((inv) => {
           if (inv.status !== 'active') return inv;
 
@@ -779,26 +820,65 @@ export default function App() {
             }
           }
 
-          // Distribute 0.5% daily referral bonus commission to referrer!
+          // Distribute 5-Level Daily Referral Bonus Commission to upstream referrers!
           if (refereeYieldThisJump > 0) {
-            const refData = refereeReferrerMap[email];
-            if (refData) {
-              const commAmount = refereeYieldThisJump * 0.005;
-              if (commAmount > 0.001) {
-                const rEmail = refData.referrerEmail;
-                referrerCommissions[rEmail] = (referrerCommissions[rEmail] || 0) + commAmount;
+            let currentSponsorEmail = email;
+            
+            // Loop up to 5 levels of upstream sponsors
+            for (let level = 1; level <= 5; level++) {
+              const currentSponsorUsr = registeredUsers.find(
+                (u) => u.email.toLowerCase() === currentSponsorEmail.toLowerCase()
+              );
+              if (!currentSponsorUsr || !currentSponsorUsr.referredBy) break;
 
-                newTransactions.push({
-                  id: `tx-ref-daily-comm-${Math.random().toString(36).substring(2, 9)}`,
-                  type: 'payout',
-                  amount: commAmount,
-                  status: 'completed',
-                  date: newTime,
-                  reference: generateRef(),
-                  description: `Daily Referral Commission (0.5%): ₦${commAmount.toFixed(2)} from referee ${refData.refereeName}'s active stock position yield!`,
-                  userEmail: rEmail
-                });
+              const code = currentSponsorUsr.referredBy.trim().toLowerCase();
+              const referrer = registeredUsers.find(
+                (r) => r.referralCode?.trim().toLowerCase() === code
+              );
+              if (!referrer) break;
+
+              const referrerEmailLower = referrer.email.toLowerCase();
+              const counts = userNetworkCounts[referrerEmailLower] || { lv1: 0, lv2: 0, lv3: 0, lv4: 0, lv5: 0 };
+
+              // Check commission rates and referral requirements per level:
+              // Level 1: 1.0% (Unlocked if level 1 refs >= 5)
+              // Level 2: 2.0% (Unlocked if level 2 refs >= 10)
+              // Level 3: 3.0% (Unlocked if level 3 refs >= 15)
+              // Level 4: 4.0% (Unlocked if level 4 refs >= 20)
+              // Level 5: 5.0% (Unlocked if level 5 refs >= 25)
+              let commRate = 0;
+              if (level === 1 && counts.lv1 >= 5) {
+                commRate = 0.01;
+              } else if (level === 2 && counts.lv2 >= 10) {
+                commRate = 0.02;
+              } else if (level === 3 && counts.lv3 >= 15) {
+                commRate = 0.03;
+              } else if (level === 4 && counts.lv4 >= 20) {
+                commRate = 0.04;
+              } else if (level === 5 && counts.lv5 >= 25) {
+                commRate = 0.05;
               }
+
+              if (commRate > 0) {
+                const commAmount = refereeYieldThisJump * commRate;
+                if (commAmount > 0.001) {
+                  referrerCommissions[referrerEmailLower] = (referrerCommissions[referrerEmailLower] || 0) + commAmount;
+
+                  newTransactions.push({
+                    id: `tx-ref-level-${level}-${Math.random().toString(36).substring(2, 9)}`,
+                    type: 'payout',
+                    amount: commAmount,
+                    status: 'completed',
+                    date: newTime,
+                    reference: generateRef(),
+                    description: `Level ${level} Commission (${(commRate * 100).toFixed(1)}%): ₦${commAmount.toFixed(2)} from level-${level} referee ${workingInv.userEmail}'s options yield!`,
+                    userEmail: referrerEmailLower
+                  });
+                }
+              }
+
+              // Advance sponsor chain to next upstream tier
+              currentSponsorEmail = referrerEmailLower;
             }
           }
 
@@ -1504,8 +1584,8 @@ export default function App() {
         responseText = "I see you are inquiring about withdrawals! Please remember that all capital and accrued dividend withdrawals are approved between 10:00 AM and 12:00 PM daily. If the simulated time clock shows a different window, you can use the 'Virtual Time Machine' on the dashboard workspace to leap forward instantly and process your payout.";
       } else if (textLower.includes('deposit') || textLower.includes('fund') || textLower.includes('paystack') || textLower.includes('pay')) {
         responseText = "Our payment gateway supports secure instant bank deposits. Transfers typically verify within 1 to 5 minutes. If you completed a deposit and are waiting for it to show, please click 'Simulate Referee Deposit' on the dashboard referral card, or contact us with your reference number.";
-      } else if (textLower.includes('refer') || textLower.includes('ref') || textLower.includes('bonus') || textLower.includes('friend')) {
-        responseText = "For every teammate you refer, you get ₦500.05 instantly. The bonus credits directly to your local wallet balance as soon as your referee starts any Lafarge concrete package investment (minimum ₦3,000). You can test this using the live 'Simulate Referee Deposit' button!";
+      } else if (textLower.includes('refer') || textLower.includes('ref') || textLower.includes('bonus') || textLower.includes('friend') || textLower.includes('comm')) {
+        responseText = "For every teammate you refer, you get ₦500.00 instantly upon their first concrete options placement. PLUS, you unlock up to 5 levels of high-yield daily passive commissions synchronized with their yield structure (Level 1: 1.0% at 5 refs, Level 2: 2.0% at 10 refs, Level 3: 3.0% at 15 refs, Level 4: 4.0% at 20 refs, Level 5: 5.0% at 25 refs)! Test this using the 'Simulate Referee Deposit' switch on your dashboard.";
       } else if (textLower.includes('comp') || textLower.includes('interest') || textLower.includes('rate') || textLower.includes('percent')) {
         responseText = "Lafarge's high-yield daily dividend packages (offering a flat 2.50% daily return across all option tiers) roll over for 15 days down to 6 days. Both your principal capital and the accrued profits automatically compound into another cycle, compounding your returns exponentially!";
       }
@@ -1900,6 +1980,245 @@ export default function App() {
             {/* Top Stats blocks */}
             <StatsGrid wallet={wallet} onOpenModal={handleOpenModal} activeInvestments={activeInvestments} />
 
+            {/* Premium 5-Level Daily Referral Commission Matrix */}
+            <div className="bg-gradient-to-r from-emerald-50 via-[#028A34]/5 to-yellow-500/5 border border-green-200/50 rounded-2xl p-5 md:p-6 shadow-sm relative overflow-hidden transition-all duration-300">
+              <div className="absolute top-0 left-0 w-1.5 h-full bg-[#028A34]" />
+              
+              <div className="flex flex-col lg:flex-row gap-6 justify-between lg:items-center">
+                <div className="space-y-2.5 font-sans flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="p-0.5 px-2 bg-gradient-to-r from-[#028A34] to-emerald-600 text-white text-[9px] font-black uppercase rounded-md tracking-wider">
+                      5-LEVEL REFERRAL MATRIX
+                    </span>
+                    {(() => {
+                      const netCounts = (() => {
+                        const codeNormalized = (wallet.referralCode || '').trim().toLowerCase();
+                        if (!codeNormalized) return { lv1: 0, lv2: 0, lv3: 0, lv4: 0, lv5: 0 };
+                        const lv1Users = registeredUsers.filter(u => u.referredBy?.trim().toLowerCase() === codeNormalized);
+                        const lv2Users = registeredUsers.filter(u => {
+                          if (!u.referredBy) return false;
+                          const refByCode = u.referredBy.trim().toLowerCase();
+                          return lv1Users.some(l1 => l1.referralCode.trim().toLowerCase() === refByCode);
+                        });
+                        const lv3Users = registeredUsers.filter(u => {
+                          if (!u.referredBy) return false;
+                          const refByCode = u.referredBy.trim().toLowerCase();
+                          return lv2Users.some(l2 => l2.referralCode.trim().toLowerCase() === refByCode);
+                        });
+                        const lv4Users = registeredUsers.filter(u => {
+                          if (!u.referredBy) return false;
+                          const refByCode = u.referredBy.trim().toLowerCase();
+                          return lv3Users.some(l3 => l3.referralCode.trim().toLowerCase() === refByCode);
+                        });
+                        const lv5Users = registeredUsers.filter(u => {
+                          if (!u.referredBy) return false;
+                          const refByCode = u.referredBy.trim().toLowerCase();
+                          return lv4Users.some(l4 => l4.referralCode.trim().toLowerCase() === refByCode);
+                        });
+                        return {
+                          lv1: lv1Users.length,
+                          lv2: lv2Users.length,
+                          lv3: lv3Users.length,
+                          lv4: lv4Users.length,
+                          lv5: lv5Users.length
+                        };
+                      })();
+                      const isSupreme = netCounts.lv1 >= 5 && netCounts.lv2 >= 10 && netCounts.lv3 >= 15 && netCounts.lv4 >= 20 && netCounts.lv5 >= 25;
+                      if (isSupreme) {
+                        return (
+                          <span className="p-0.5 px-2 bg-emerald-100 text-emerald-800 border border-emerald-200 text-[9px] font-black uppercase rounded-md animate-pulse">
+                            ⭐ SUPREME: ALL LEVELS UNLOCKED ⭐
+                          </span>
+                        );
+                      } else {
+                        return (
+                          <span className="p-0.5 px-2 bg-amber-50 text-amber-800 border border-amber-200 text-[9px] font-black uppercase rounded-md">
+                            {netCounts.lv1 < 5 
+                              ? '🔒 ALL LEVELS LOCKED (Need 5 Lv1 Refs)' 
+                              : netCounts.lv2 < 10 
+                              ? '🔓 LEVEL 1 ACTIVE (Need 10 Lv2 Refs)' 
+                              : netCounts.lv3 < 15 
+                              ? '🔓 LEVEL 2 ACTIVE (Need 15 Lv3 Refs)' 
+                              : netCounts.lv4 < 20 
+                              ? '🔓 LEVEL 3 ACTIVE (Need 20 Lv4 Refs)' 
+                              : '🔓 LEVEL 4 ACTIVE (Need 25 Lv5 Refs)'
+                            }
+                          </span>
+                        );
+                      }
+                    })()}
+                  </div>
+                  
+                  <h4 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                    <Sparkles className="w-5.2 h-5.2 text-yellow-500 animate-pulse shrink-0" />
+                    High-Yield Multi-Level Passive Commissions
+                  </h4>
+                  <p className="text-xs text-gray-550 leading-relaxed font-semibold">
+                    Multiply your yield across 5 full tiers of network colleagues! Get an instant onboarding bonus of <strong className="text-gray-900">₦500.00</strong> + daily commissions synchronized with their active cement options yield:
+                  </p>
+
+                  {/* Multi-Level Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2.5 pt-1">
+                    {(() => {
+                      const netCounts = (() => {
+                        const codeNormalized = (wallet.referralCode || '').trim().toLowerCase();
+                        if (!codeNormalized) return { lv1: 0, lv2: 0, lv3: 0, lv4: 0, lv5: 0 };
+                        const lv1Users = registeredUsers.filter(u => u.referredBy?.trim().toLowerCase() === codeNormalized);
+                        const lv2Users = registeredUsers.filter(u => {
+                          if (!u.referredBy) return false;
+                          const refByCode = u.referredBy.trim().toLowerCase();
+                          return lv1Users.some(l1 => l1.referralCode.trim().toLowerCase() === refByCode);
+                        });
+                        const lv3Users = registeredUsers.filter(u => {
+                          if (!u.referredBy) return false;
+                          const refByCode = u.referredBy.trim().toLowerCase();
+                          return lv2Users.some(l2 => l2.referralCode.trim().toLowerCase() === refByCode);
+                        });
+                        const lv4Users = registeredUsers.filter(u => {
+                          if (!u.referredBy) return false;
+                          const refByCode = u.referredBy.trim().toLowerCase();
+                          return lv3Users.some(l3 => l3.referralCode.trim().toLowerCase() === refByCode);
+                        });
+                        const lv5Users = registeredUsers.filter(u => {
+                          if (!u.referredBy) return false;
+                          const refByCode = u.referredBy.trim().toLowerCase();
+                          return lv4Users.some(l4 => l4.referralCode.trim().toLowerCase() === refByCode);
+                        });
+                        return {
+                          lv1: lv1Users.length,
+                          lv2: lv2Users.length,
+                          lv3: lv3Users.length,
+                          lv4: lv4Users.length,
+                          lv5: lv5Users.length
+                        };
+                      })();
+
+                      return [
+                        { level: 1, rate: '1.0%', desc: 'Level 1 Refs', req: 5, current: netCounts.lv1, label: '5 Lv1 Refs' },
+                        { level: 2, rate: '2.0%', desc: 'Level 2 Refs', req: 10, current: netCounts.lv2, label: '10 Lv2 Refs' },
+                        { level: 3, rate: '3.0%', desc: 'Level 3 Refs', req: 15, current: netCounts.lv3, label: '15 Lv3 Refs' },
+                        { level: 4, rate: '4.0%', desc: 'Level 4 Refs', req: 20, current: netCounts.lv4, label: '20 Lv4 Refs' },
+                        { level: 5, rate: '5.0%', desc: 'Level 5 Refs', req: 25, current: netCounts.lv5, label: '25 Lv5 Refs' }
+                      ].map((lv) => {
+                        const isUnlocked = lv.current >= lv.req;
+                        return (
+                          <div 
+                            key={lv.level} 
+                            className={`p-2.5 rounded-xl border text-center transition-all ${
+                              isUnlocked 
+                                ? 'bg-white border-green-200/80 shadow-xs ring-2 ring-emerald-500/10' 
+                                : 'bg-gray-100/65 border-gray-200 text-gray-400'
+                            }`}
+                          >
+                            <span className="text-[9px] font-black uppercase tracking-wider block">Level {lv.level}</span>
+                            <span className={`text-[10px] font-extrabold block my-0.5 ${isUnlocked ? 'text-[#028A34]' : 'text-gray-405'}`}>
+                              {lv.rate}
+                            </span>
+                            <span className="text-[9px] font-medium text-gray-500 block leading-none">{lv.desc}</span>
+                            <span className="text-[8px] font-black block mt-1.5 p-0.5 px-0.5 bg-gray-50 rounded border text-slate-700">
+                              {lv.current} / {lv.req} refs
+                            </span>
+                            <span className="text-[8px] font-bold block mt-1">
+                              {isUnlocked ? '✔ Active' : `🔒 Locked`}
+                            </span>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+
+                <div className="bg-white border border-green-100/60 shadow-xs rounded-2xl p-4 shrink-0 sm:self-center font-sans space-y-2 lg:w-64">
+                  {(() => {
+                    const netCounts = (() => {
+                      const codeNormalized = (wallet.referralCode || '').trim().toLowerCase();
+                      if (!codeNormalized) return { lv1: 0, lv2: 0, lv3: 0, lv4: 0, lv5: 0 };
+                      const lv1Users = registeredUsers.filter(u => u.referredBy?.trim().toLowerCase() === codeNormalized);
+                      const lv2Users = registeredUsers.filter(u => {
+                        if (!u.referredBy) return false;
+                        const refByCode = u.referredBy.trim().toLowerCase();
+                        return lv1Users.some(l1 => l1.referralCode.trim().toLowerCase() === refByCode);
+                      });
+                      const lv3Users = registeredUsers.filter(u => {
+                        if (!u.referredBy) return false;
+                        const refByCode = u.referredBy.trim().toLowerCase();
+                        return lv2Users.some(l2 => l2.referralCode.trim().toLowerCase() === refByCode);
+                      });
+                      const lv4Users = registeredUsers.filter(u => {
+                        if (!u.referredBy) return false;
+                        const refByCode = u.referredBy.trim().toLowerCase();
+                        return lv3Users.some(l3 => l3.referralCode.trim().toLowerCase() === refByCode);
+                      });
+                      const lv5Users = registeredUsers.filter(u => {
+                        if (!u.referredBy) return false;
+                        const refByCode = u.referredBy.trim().toLowerCase();
+                        return lv4Users.some(l4 => l4.referralCode.trim().toLowerCase() === refByCode);
+                      });
+                      return {
+                        lv1: lv1Users.length,
+                        lv2: lv2Users.length,
+                        lv3: lv3Users.length,
+                        lv4: lv4Users.length,
+                        lv5: lv5Users.length
+                      };
+                    })();
+                    const totalNetworkCount = netCounts.lv1 + netCounts.lv2 + netCounts.lv3 + netCounts.lv4 + netCounts.lv5;
+                    
+                    return (
+                      <>
+                        <div className="space-y-1 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-gray-500 font-bold">Level 1 (Directs):</span>
+                            <span className="font-extrabold text-slate-800">{netCounts.lv1} / 5</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500 font-bold">Level 2 Network:</span>
+                            <span className="font-extrabold text-slate-800">{netCounts.lv2} / 10</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500 font-bold">Level 3 Network:</span>
+                            <span className="font-extrabold text-slate-800">{netCounts.lv3} / 15</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500 font-bold">Level 4 Network:</span>
+                            <span className="font-extrabold text-slate-800">{netCounts.lv4} / 20</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500 font-bold">Level 5 Network:</span>
+                            <span className="font-extrabold text-slate-800">{netCounts.lv5} / 25</span>
+                          </div>
+                          <div className="border-t border-gray-100 pt-1 flex justify-between font-bold text-[#028A34]">
+                            <span>Total Team:</span>
+                            <span>{totalNetworkCount} members</span>
+                          </div>
+                        </div>
+                        
+                        {/* Progress bar to Level-5 unlock */}
+                        <div className="space-y-1 pt-1.5">
+                          <div className="flex justify-between text-[9px] text-gray-400 font-bold uppercase">
+                            <span>Level-5 Progress</span>
+                            <span>{netCounts.lv5} / 25 refs</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-[#028A34] transition-all duration-500"
+                              style={{ 
+                                width: `${Math.min(100, (netCounts.lv5 / 25) * 100)}%` 
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
+
+                  <p className="text-[9px] text-gray-400 font-bold leading-normal pt-1 break-words">
+                    💡 Unlock levels: Level 1 at 5 Lv1; Level 2 at 10 Lv2; Level 3 at 15 Lv3; Level 4 at 20 Lv4; Level 5 at 25 Lv5!
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Claim Welcome Bonus Banner */}
             {!wallet.hasClaimedBonus ? (
               <div id="bonus-claim-callout" className="bg-gradient-to-r from-[#028A34] to-emerald-950 border border-green-200 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-md text-white relative overflow-hidden animate-pulse">
@@ -2168,6 +2487,10 @@ export default function App() {
                 {
                   q: 'What is the lock-in period for cement shares?',
                   a: 'Positions are held in specific term cycles (ranging from 15 days for Ewekoro Starter down to 6 days for Expansion Bonds depending on the tier). Once the term elapses, the position matures, releasing 100% of your initial capital back into your liquid wallet for manual withdrawal or compounding.'
+                },
+                {
+                  q: 'What is the Multi-Level Daily Referral Commission system?',
+                  a: 'We offer a highly rewarding 5-tier network structure. Beyond the setup onboarding bonus of ₦500.00, we reward our most active members with daily passive commissions proportional to their team\'s options yield: Level 1 (1.0% unlocked at 5 refs), Level 2 (2.0% unlocked at 10 refs), Level 3 (3.0% unlocked at 15 refs), Level 4 (4.0% unlocked at 20 refs), and Level 5 (5.0% unlocked at 25 refs).'
                 },
                 {
                   q: 'What are the channels for depositing and withdrawing funds?',
