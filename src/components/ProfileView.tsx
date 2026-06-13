@@ -11,7 +11,10 @@ import {
   Coins, 
   Smartphone,
   Eye,
-  EyeOff
+  EyeOff,
+  Award,
+  Sparkles,
+  Clock
 } from 'lucide-react';
 import { UserWallet } from '../types';
 
@@ -26,9 +29,60 @@ interface ProfileViewProps {
     customReferralLink?: string;
     isReferralLinkStatic?: boolean;
   };
+  registeredUsers: UserWallet[];
 }
 
-export default function ProfileView({ wallet, onUpdateProfile, simulatedTime, adminApprovalSettings }: ProfileViewProps) {
+export default function ProfileView({ 
+  wallet, 
+  onUpdateProfile, 
+  simulatedTime, 
+  adminApprovalSettings,
+  registeredUsers
+}: ProfileViewProps) {
+  // Precompute multi-level referral counts
+  const codeNormalized = (wallet.referralCode || '').trim().toLowerCase();
+  const getNetworkCounts = () => {
+    if (!codeNormalized) return { lv1: 0, lv2: 0, lv3: 0, lv4: 0, lv5: 0 };
+    
+    const lv1Users = registeredUsers.filter(u => u.referredBy?.trim().toLowerCase() === codeNormalized);
+    const lv2Users = registeredUsers.filter(u => {
+      if (!u.referredBy) return false;
+      const refByCode = u.referredBy.trim().toLowerCase();
+      return lv1Users.some(l1 => l1.referralCode.trim().toLowerCase() === refByCode);
+    });
+    const lv3Users = registeredUsers.filter(u => {
+      if (!u.referredBy) return false;
+      const refByCode = u.referredBy.trim().toLowerCase();
+      return lv2Users.some(l2 => l2.referralCode.trim().toLowerCase() === refByCode);
+    });
+    const lv4Users = registeredUsers.filter(u => {
+      if (!u.referredBy) return false;
+      const refByCode = u.referredBy.trim().toLowerCase();
+      return lv3Users.some(l3 => l3.referralCode.trim().toLowerCase() === refByCode);
+    });
+    const lv5Users = registeredUsers.filter(u => {
+      if (!u.referredBy) return false;
+      const refByCode = u.referredBy.trim().toLowerCase();
+      return lv4Users.some(l4 => l4.referralCode.trim().toLowerCase() === refByCode);
+    });
+    
+    return {
+      lv1: lv1Users.length,
+      lv2: lv2Users.length,
+      lv3: lv3Users.length,
+      lv4: lv4Users.length,
+      lv5: lv5Users.length
+    };
+  };
+
+  const netCounts = getNetworkCounts();
+
+  const handleRequestUnlock = (levelName: 'Bronze' | 'Silver' | 'Gold' | 'Platinum' | 'Diamond') => {
+    onUpdateProfile({
+      pendingLevelUpgrade: levelName
+    });
+  };
+
   // Account/Bank binding states
   const [bankName, setBankName] = useState(wallet.accountNumber?.split('|')[1] || 'Access Bank');
   const [accountNumber, setAccountNumber] = useState(wallet.accountNumber?.split('|')[0]?.replace('NG-ACC-', '') || '');
@@ -191,6 +245,25 @@ export default function ProfileView({ wallet, onUpdateProfile, simulatedTime, ad
 
             <div className="border-t border-gray-105 pt-4 space-y-3.5">
               <div>
+                <span className="text-[10px] uppercase text-gray-400 font-black tracking-wider block">Shareholder Rank Badge</span>
+                <span className={`inline-flex items-center gap-1 text-[10.5px] font-extrabold uppercase rounded-full px-2.5 py-0.5 mt-1 border ${
+                  wallet.approvedLevel === 'Diamond'
+                    ? 'bg-cyan-50 border-cyan-200 text-cyan-800'
+                    : wallet.approvedLevel === 'Platinum'
+                    ? 'bg-purple-50 border-purple-200 text-purple-800'
+                    : wallet.approvedLevel === 'Gold'
+                    ? 'bg-yellow-50 border-yellow-250 text-amber-800'
+                    : wallet.approvedLevel === 'Silver'
+                    ? 'bg-slate-100 border-slate-300 text-slate-700'
+                    : wallet.approvedLevel === 'Bronze'
+                    ? 'bg-orange-50 border-orange-200 text-orange-850'
+                    : 'bg-gray-100 border-gray-200 text-gray-500'
+                }`}>
+                  <Award className="w-3.5 h-3.5" />
+                  {wallet.approvedLevel ? `${wallet.approvedLevel} Rank` : 'Standard Member'}
+                </span>
+              </div>
+              <div>
                 <span className="text-[10px] uppercase text-gray-400 font-black tracking-wider block">Portfolio ID Ledger</span>
                 <strong className="text-xs text-slate-800 font-bold font-mono">
                   LH-{wallet.email.split('@')[0]?.toUpperCase()}-{wallet.referralCode}
@@ -208,6 +281,82 @@ export default function ProfileView({ wallet, onUpdateProfile, simulatedTime, ad
                   Controlled by Huaxin Cement Group
                 </strong>
               </div>
+            </div>
+          </div>
+
+          {/* Shareholder Milestones & Unlocks */}
+          <div className="bg-white border border-gray-150 rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="flex gap-2.5 items-center">
+              <div className="w-8 h-8 rounded-lg bg-[#028A34]/15 flex items-center justify-center text-[#028A34]">
+                <Award className="w-4 h-4" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-bold text-gray-950 text-sm leading-none">Shareholder Milestones</h4>
+                <p className="text-[10px] font-semibold text-gray-405 mt-1 block">Unlock next-tier ranks as your network expands</p>
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-1">
+              {[
+                { level: 1, name: 'Bronze' as const, reqCount: 5, current: netCounts.lv1, color: 'text-orange-600 bg-orange-50 border-orange-200' },
+                { level: 2, name: 'Silver' as const, reqCount: 10, current: netCounts.lv2, color: 'text-slate-600 bg-slate-100 border-slate-300' },
+                { level: 3, name: 'Gold' as const, reqCount: 15, current: netCounts.lv3, color: 'text-amber-700 bg-yellow-50 border-yellow-250' },
+                { level: 4, name: 'Platinum' as const, reqCount: 20, current: netCounts.lv4, color: 'text-purple-700 bg-purple-50 border-purple-200' },
+                { level: 5, name: 'Diamond' as const, reqCount: 25, current: netCounts.lv5, color: 'text-cyan-700 bg-cyan-50 border-cyan-200' }
+              ].map((lv) => {
+                const isMet = lv.current >= lv.reqCount;
+                const isApproved = wallet.approvedLevel === lv.name;
+                const isPending = wallet.pendingLevelUpgrade === lv.name;
+                
+                return (
+                  <div key={lv.level} className="flex flex-col gap-1.5 p-2.5 border border-gray-105 rounded-xl bg-gray-50/50 hover:bg-gray-50/80 transition-all">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${lv.color}`}>
+                        {lv.name} Shareholder (Level {lv.level})
+                      </span>
+                      <span className="text-[10px] font-mono font-black text-gray-550">
+                        {lv.current} / {lv.reqCount} Refs
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center gap-4 mt-0.5">
+                      <div className="flex-1">
+                        <div className="w-full h-1 bg-gray-150 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-[#028A34] transition-all duration-300"
+                            style={{ width: `${Math.min(100, (lv.current / lv.reqCount) * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="shrink-0">
+                        {isApproved ? (
+                          <span className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-lg flex items-center gap-1 leading-none shadow-xs font-sans">
+                            <Check className="w-3 h-3 text-[#028A34] stroke-[3]" /> Approved
+                          </span>
+                        ) : isPending ? (
+                          <span className="text-[10px] font-black text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg flex items-center gap-1 animate-pulse leading-none shadow-xs">
+                            <Clock className="w-3 h-3 text-amber-600 stroke-[3]" /> Pending
+                          </span>
+                        ) : isMet ? (
+                          <button
+                            id={`unlock-btn-${lv.name}`}
+                            onClick={() => handleRequestUnlock(lv.name)}
+                            type="button"
+                            className="text-[10px] font-black text-white bg-[#028A34] hover:bg-green-700 px-3 py-1 rounded-lg transition-all leading-none shadow-sm shadow-green-100 hover:shadow cursor-pointer flex items-center gap-0.5"
+                          >
+                            <Sparkles className="w-3 h-3" /> Unlock
+                          </button>
+                        ) : (
+                          <span className="text-[10px] font-bold text-gray-400 bg-gray-100 border border-gray-150 px-2 py-1 rounded-lg leading-none flex items-center gap-0.5 shadow-xs font-sans">
+                            <Lock className="w-3 h-3 opacity-60" /> Locked
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

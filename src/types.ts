@@ -16,6 +16,8 @@ export interface UserWallet {
   password?: string;
   referredBy?: string;
   autoInvest?: boolean;
+  approvedLevel?: 'Bronze' | 'Silver' | 'Gold' | 'Platinum' | 'Diamond';
+  pendingLevelUpgrade?: 'Bronze' | 'Silver' | 'Gold' | 'Platinum' | 'Diamond';
 }
 
 export interface InvestmentProduct {

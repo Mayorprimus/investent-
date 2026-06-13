@@ -24,7 +24,9 @@ import {
   User,
   ToggleRight,
   Eye,
-  Gift
+  Gift,
+  Award,
+  Sparkles
 } from 'lucide-react';
 import { formatNGN } from '../utils';
 import { Transaction, ActiveInvestment, UserWallet, SupportTicket, DepositAccount, ReferralRelationship } from '../types';
@@ -65,6 +67,7 @@ interface AdminPortalProps {
   onApproveInvestment: (invId: string) => void;
   onDeclineInvestment: (invId: string) => void;
   onUpdateUserWallet: (updates: Partial<UserWallet>) => void;
+  onAdminUpdateSpecificUser: (email: string, updates: Partial<UserWallet>) => void;
   registeredUsers: UserWallet[];
   onSelectUser: (email: string) => void;
 
@@ -102,6 +105,7 @@ export default function AdminPortal({
   onApproveInvestment,
   onDeclineInvestment,
   onUpdateUserWallet,
+  onAdminUpdateSpecificUser,
   registeredUsers,
   onSelectUser,
   depositAccounts,
@@ -860,6 +864,140 @@ export default function AdminPortal({
           <div>
             <h3 className="text-lg font-bold text-gray-950">Referral Program Auditing</h3>
             <p className="text-xs text-gray-400 font-medium font-sans">Verify promotional signup referrals. Approving a referral will credit the respective referrer with their ₦500.00 booster reward.</p>
+          </div>
+
+          {/* Shareholder Level Upgrades Subsection */}
+          {(() => {
+            const pendingLevelUpgrades = registeredUsers.filter(u => u.pendingLevelUpgrade);
+            return (
+              <div className="border bg-slate-50/50 border-gray-150 rounded-2xl p-4 md:p-5 space-y-4">
+                <div>
+                  <h4 className="text-xs font-black text-gray-950 flex items-center gap-1.5 uppercase tracking-wide">
+                    <Award className="w-4 h-4 text-emerald-600" /> Shareholder Rank Upgrade Requests
+                  </h4>
+                  <p className="text-[10px] text-gray-400 font-sans font-medium mt-0.5">Verify list of rank applications to unlock upper-tier statuses based on multi-level network referral codes.</p>
+                </div>
+
+                {pendingLevelUpgrades.length === 0 ? (
+                  <div className="text-center py-6 px-4 bg-white border border-gray-100 rounded-xl max-w-sm mx-auto space-y-1">
+                    <Award className="w-6 h-6 text-gray-300 block mx-auto opacity-75" />
+                    <h5 className="font-bold text-gray-900 text-[11px]">No rank upgrade requests pending</h5>
+                    <p className="text-[9.5px] text-gray-400 font-sans">Shareholders will request ranks when they reach their network invitation thresholds.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {pendingLevelUpgrades.map((usr) => {
+                      // Precompute user multi-level referral counts
+                      const getNetworkCountsForUser = (userWallet: UserWallet) => {
+                        const codeNormalized = (userWallet.referralCode || '').trim().toLowerCase();
+                        if (!codeNormalized) return { lv1: 0, lv2: 0, lv3: 0, lv4: 0, lv5: 0 };
+                        
+                        const lv1Users = registeredUsers.filter(u => u.referredBy?.trim().toLowerCase() === codeNormalized);
+                        const lv2Users = registeredUsers.filter(u => {
+                          if (!u.referredBy) return false;
+                          const refByCode = u.referredBy.trim().toLowerCase();
+                          return lv1Users.some(l1 => l1.referralCode.trim().toLowerCase() === refByCode);
+                        });
+                        const lv3Users = registeredUsers.filter(u => {
+                          if (!u.referredBy) return false;
+                          const refByCode = u.referredBy.trim().toLowerCase();
+                          return lv2Users.some(l2 => l2.referralCode.trim().toLowerCase() === refByCode);
+                        });
+                        const lv4Users = registeredUsers.filter(u => {
+                          if (!u.referredBy) return false;
+                          const refByCode = u.referredBy.trim().toLowerCase();
+                          return lv3Users.some(l3 => l3.referralCode.trim().toLowerCase() === refByCode);
+                        });
+                        const lv5Users = registeredUsers.filter(u => {
+                          if (!u.referredBy) return false;
+                          const refByCode = u.referredBy.trim().toLowerCase();
+                          return lv4Users.some(l4 => l4.referralCode.trim().toLowerCase() === refByCode);
+                        });
+                        
+                        return {
+                          lv1: lv1Users.length,
+                          lv2: lv2Users.length,
+                          lv3: lv3Users.length,
+                          lv4: lv4Users.length,
+                          lv5: lv5Users.length
+                        };
+                      };
+
+                      const usrCounts = getNetworkCountsForUser(usr);
+                      const requested = usr.pendingLevelUpgrade!;
+                      
+                      let currentCount = 0;
+                      let requiredCount = 0;
+                      if (requested === 'Bronze') { currentCount = usrCounts.lv1; requiredCount = 5; }
+                      else if (requested === 'Silver') { currentCount = usrCounts.lv2; requiredCount = 10; }
+                      else if (requested === 'Gold') { currentCount = usrCounts.lv3; requiredCount = 15; }
+                      else if (requested === 'Platinum') { currentCount = usrCounts.lv4; requiredCount = 20; }
+                      else if (requested === 'Diamond') { currentCount = usrCounts.lv5; requiredCount = 25; }
+
+                      const hasMetReq = currentCount >= requiredCount;
+
+                      return (
+                        <div key={usr.email} className="p-3 bg-white border border-gray-150 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-3 text-xs font-sans">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-gray-900">{usr.fullName}</span>
+                              <span className="text-[10px] text-gray-400 font-mono">({usr.email})</span>
+                              <span className="text-[9px] uppercase font-black px-1.5 py-0.2 bg-slate-50 text-slate-655 border border-slate-200 rounded font-mono">
+                                Code: {usr.referralCode}
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                              <span className="text-[9.5px] font-bold text-slate-500">
+                                Current Active Rank: <strong className="text-slate-800 font-extrabold">{usr.approvedLevel || 'Standard Member'}</strong>
+                              </span>
+                              <span className="text-gray-300">|</span>
+                              <span className="text-[9.5px] font-black text-amber-850 bg-amber-50 border border-amber-150 px-2.5 py-0.5 rounded-md flex items-center gap-1">
+                                Pending upgrade: <strong className="uppercase font-extrabold">{requested}</strong>
+                              </span>
+                            </div>
+                            <div className="text-[10px] font-bold text-slate-500 pt-1 flex items-center gap-1 flex-wrap">
+                              <span>Level Network:</span>
+                              <span className={hasMetReq ? 'text-[#028A34] font-extrabold font-mono' : 'text-amber-600 font-black font-mono'}>{currentCount} / {requiredCount} refs</span> 
+                              <span>{hasMetReq ? '✔ (Requirements Met)' : '❌ (Insufficient Network Depth)'}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0 md:self-center w-full md:w-auto">
+                            <button
+                              id={`decline-rank-${usr.email}`}
+                              onClick={() => {
+                                onAdminUpdateSpecificUser(usr.email, {
+                                  pendingLevelUpgrade: undefined
+                                });
+                              }}
+                              className="flex-1 md:flex-initial px-3 py-1.5 border border-red-200 hover:border-red-300 bg-red-50 text-red-700 font-bold uppercase text-[9.5px] rounded-lg transition-colors cursor-pointer"
+                            >
+                              Decline
+                            </button>
+                            <button
+                              id={`approve-rank-${usr.email}`}
+                              onClick={() => {
+                                onAdminUpdateSpecificUser(usr.email, {
+                                  approvedLevel: requested,
+                                  pendingLevelUpgrade: undefined
+                                });
+                              }}
+                              className="flex-1 md:flex-initial px-3.5 py-2 bg-[#028A34] hover:bg-green-700 text-white font-black uppercase text-[9.5px] rounded-lg transition-colors shadow-sm shadow-green-150 cursor-pointer"
+                            >
+                              Approve Rank
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          <div className="pt-2 border-t border-dashed border-gray-150">
+            <h4 className="text-[10.5px] font-black text-gray-400 uppercase tracking-widest block mb-1">Standard Signup Referral Audits</h4>
           </div>
 
           {!referralsList || referralsList.length === 0 ? (

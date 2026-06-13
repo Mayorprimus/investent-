@@ -1743,6 +1743,19 @@ export default function App() {
     });
   };
 
+  const handleUpdateSpecificUser = (email: string, updates: Partial<UserWallet>) => {
+    setRegisteredUsers((prevUsers) =>
+      prevUsers.map((u) => u.email.toLowerCase() === email.toLowerCase() ? { ...u, ...updates } : u)
+    );
+
+    setWallet((prev) => {
+      if (prev.email.toLowerCase() === email.toLowerCase()) {
+        return { ...prev, ...updates };
+      }
+      return prev;
+    });
+  };
+
   const handleDeleteUser = (userEmail: string) => {
     if (userEmail.toLowerCase() === 'admin1234@gmail.com') {
       alert("Cannot delete primary Corporate Admin.");
@@ -2094,11 +2107,11 @@ export default function App() {
                       })();
 
                       return [
-                        { level: 1, rate: '1.0%', desc: 'Level 1 Refs', req: 5, current: netCounts.lv1, label: '5 Lv1 Refs' },
-                        { level: 2, rate: '2.0%', desc: 'Level 2 Refs', req: 10, current: netCounts.lv2, label: '10 Lv2 Refs' },
-                        { level: 3, rate: '3.0%', desc: 'Level 3 Refs', req: 15, current: netCounts.lv3, label: '15 Lv3 Refs' },
-                        { level: 4, rate: '4.0%', desc: 'Level 4 Refs', req: 20, current: netCounts.lv4, label: '20 Lv4 Refs' },
-                        { level: 5, rate: '5.0%', desc: 'Level 5 Refs', req: 25, current: netCounts.lv5, label: '25 Lv5 Refs' }
+                        { level: 1, rate: '1.0%', desc: 'Bronze Shareholder', req: 5, current: netCounts.lv1, name: 'Bronze' },
+                        { level: 2, rate: '2.0%', desc: 'Silver Shareholder', req: 10, current: netCounts.lv2, name: 'Silver' },
+                        { level: 3, rate: '3.0%', desc: 'Gold Shareholder', req: 15, current: netCounts.lv3, name: 'Gold' },
+                        { level: 4, rate: '4.0%', desc: 'Platinum Shareholder', req: 20, current: netCounts.lv4, name: 'Platinum' },
+                        { level: 5, rate: '5.0%', desc: 'Diamond Shareholder', req: 25, current: netCounts.lv5, name: 'Diamond' }
                       ].map((lv) => {
                         const isUnlocked = lv.current >= lv.req;
                         return (
@@ -2110,12 +2123,12 @@ export default function App() {
                                 : 'bg-gray-100/65 border-gray-200 text-gray-400'
                             }`}
                           >
-                            <span className="text-[9px] font-black uppercase tracking-wider block">Level {lv.level}</span>
+                            <span className="text-[8px] font-black uppercase tracking-wider block leading-none">{lv.name}</span>
+                            <span className="text-[7.5px] font-semibold text-gray-400 block mt-0.5 leading-none">(Level {lv.level})</span>
                             <span className={`text-[10px] font-extrabold block my-0.5 ${isUnlocked ? 'text-[#028A34]' : 'text-gray-405'}`}>
                               {lv.rate}
                             </span>
-                            <span className="text-[9px] font-medium text-gray-500 block leading-none">{lv.desc}</span>
-                            <span className="text-[8px] font-black block mt-1.5 p-0.5 px-0.5 bg-gray-50 rounded border text-slate-700">
+                            <span className="text-[8px] font-black block mt-1 p-0.5 px-0.5 bg-gray-50 rounded border text-slate-705">
                               {lv.current} / {lv.req} refs
                             </span>
                             <span className="text-[8px] font-bold block mt-1">
@@ -2168,23 +2181,23 @@ export default function App() {
                       <>
                         <div className="space-y-1 text-xs">
                           <div className="flex justify-between">
-                            <span className="text-gray-500 font-bold">Level 1 (Directs):</span>
+                            <span className="text-gray-500 font-semibold text-[10.5px]">Bronze Shareholder (Level 1):</span>
                             <span className="font-extrabold text-slate-800">{netCounts.lv1} / 5</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-500 font-bold">Level 2 Network:</span>
+                            <span className="text-gray-500 font-semibold text-[10.5px]">Silver Shareholder (Level 2):</span>
                             <span className="font-extrabold text-slate-800">{netCounts.lv2} / 10</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-500 font-bold">Level 3 Network:</span>
+                            <span className="text-gray-500 font-semibold text-[10.5px]">Gold Shareholder (Level 3):</span>
                             <span className="font-extrabold text-slate-800">{netCounts.lv3} / 15</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-500 font-bold">Level 4 Network:</span>
+                            <span className="text-gray-500 font-semibold text-[10.5px]">Platinum Shareholder (Level 4):</span>
                             <span className="font-extrabold text-slate-800">{netCounts.lv4} / 20</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-500 font-bold">Level 5 Network:</span>
+                            <span className="text-gray-500 font-semibold text-[10.5px]">Diamond Shareholder (Level 5):</span>
                             <span className="font-extrabold text-slate-800">{netCounts.lv5} / 25</span>
                           </div>
                           <div className="border-t border-gray-100 pt-1 flex justify-between font-bold text-[#028A34]">
@@ -2213,7 +2226,7 @@ export default function App() {
                   })()}
 
                   <p className="text-[9px] text-gray-400 font-bold leading-normal pt-1 break-words">
-                    💡 Unlock levels: Level 1 at 5 Lv1; Level 2 at 10 Lv2; Level 3 at 15 Lv3; Level 4 at 20 Lv4; Level 5 at 25 Lv5!
+                    💡 Unlock levels: Bronze at 5 Lv1; Silver at 10 Lv2; Gold at 15 Lv3; Platinum at 20 Lv4; Diamond at 25 Lv5!
                   </p>
                 </div>
               </div>
@@ -2820,6 +2833,7 @@ export default function App() {
               onUpdateProfile={handleUpdateUserWalletByAdmin}
               simulatedTime={simulatedTime}
               adminApprovalSettings={adminApprovalSettings}
+              registeredUsers={registeredUsers}
             />
           </motion.div>
         )}
@@ -2852,6 +2866,7 @@ export default function App() {
               onApproveInvestment={handleApproveInvestment}
               onDeclineInvestment={handleDeclineInvestment}
               onUpdateUserWallet={handleUpdateUserWalletByAdmin}
+              onAdminUpdateSpecificUser={handleUpdateSpecificUser}
               registeredUsers={registeredUsers}
               onSelectUser={handleSelectUser}
               onDeleteUser={handleDeleteUser}
