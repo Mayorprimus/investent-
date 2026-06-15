@@ -18,6 +18,7 @@ interface PromoReferralModalProps {
 
 export default function PromoReferralModal({ isOpen, onClose, wallet, adminApprovalSettings }: PromoReferralModalProps) {
   const [copied, setCopied] = useState(false);
+  const [copiedMsg, setCopiedMsg] = useState(false);
 
   const getReferralLink = () => {
     const link = adminApprovalSettings?.customReferralLink;
@@ -34,13 +35,30 @@ export default function PromoReferralModal({ isOpen, onClose, wallet, adminAppro
       const separator = link.includes('?') ? '&' : '?';
       return `${link.trim()}${separator}ref=${wallet.referralCode}`;
     }
-    return `${window.location.origin}?ref=${wallet.referralCode}`;
+    const baseDomain = "https://laferageinvestmentshares.xyz";
+    return `${baseDomain}?ref=${wallet.referralCode}`;
   };
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(getReferralLink());
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
+  };
+
+  const getPromoMessage = (refLink: string) => {
+    return `🏗️ *Lafarge Cement Investment Shares Plc* 🏗️\nSecure your daily passive dividends with Nigeria's premier cement plant expansion options! Backed by physical assets and escrow-safe payouts. 📈\n\n💰 *Onboarding Reward:* Get *₦500.00* instantly credited to your register upon signup!\n📊 *Daily Passive Yields:* Earn up to *2.50% compound interests daily* on flexible options plans (Ewekoro, Sagamu, Mfamosing, Ashaka).\n👥 *Passive Earnings:* Build a network and unlock up to 5 tiers of high-leveraged daily passive commissions!\n\nJoin our active stakeholder network instantly using my unique link:\n👇👇👇\n${refLink}`;
+  };
+
+  const handleCopyPromo = () => {
+    const msg = getPromoMessage(getReferralLink());
+    navigator.clipboard.writeText(msg);
+    setCopiedMsg(true);
+    setTimeout(() => setCopiedMsg(false), 2500);
+  };
+
+  const getWhatsAppShareUrl = () => {
+    const msg = getPromoMessage(getReferralLink());
+    return `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
   };
 
   return (
@@ -114,40 +132,62 @@ export default function PromoReferralModal({ isOpen, onClose, wallet, adminAppro
               </div>
 
               {/* Your Personal Referral Code / Card */}
-              <div className="bg-gray-50 border border-gray-150 rounded-xl p-3 text-left space-y-1">
-                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">
-                  Your Personal Shareholder Invite Link
-                </span>
-                <input
-                  type="text"
-                  readOnly
-                  value={getReferralLink()}
-                  className="w-full bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-[10px] text-gray-500 font-mono focus:outline-none select-all font-semibold"
-                />
+              <div className="bg-gray-50 border border-gray-150 rounded-2xl p-3.5 text-left space-y-3 font-sans">
+                <div>
+                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">
+                    Your Personal Shareholder Invite Link
+                  </span>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={getReferralLink()}
+                      className="flex-1 bg-white border border-gray-200 rounded-lg px-2.5 py-1 text-[10px] text-gray-500 font-mono focus:outline-none select-all font-semibold"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCopyLink}
+                      className="px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg border border-slate-205 transition-colors cursor-pointer text-[10px] font-bold shrink-0"
+                    >
+                      {copied ? "Copied!" : "Copy URL"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-150 pt-2.5 space-y-1.5">
+                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">
+                    💬 Pre-filled WhatsApp Promo Preview
+                  </span>
+                  <div className="bg-white border border-gray-150 rounded-lg p-2.5 text-[9px] font-medium leading-relaxed italic text-gray-500 max-h-16 overflow-y-auto select-all">
+                    "🏗️ *Lafarge Cement Investment Shares Plc* 🏗️ Secure your daily passive dividends with Nigeria's premier cement plant expansion options..."
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-1 font-sans">
+                  <button
+                    id="btn-promo-copy-pitch-modal"
+                    type="button"
+                    onClick={handleCopyPromo}
+                    className="flex items-center justify-center gap-1.5 py-1.5 px-2 border border-green-200 hover:border-green-300 bg-white hover:bg-green-50/40 text-green-750 font-bold text-[10px] rounded-xl transition-all shadow-xs cursor-pointer"
+                  >
+                    {copiedMsg ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedMsg ? "Message Copied" : "Copy Invite Text"}
+                  </button>
+                  <a
+                    id="btn-promo-whatsapp-modal"
+                    href={getWhatsAppShareUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-1.5 py-1.5 px-2 bg-[#128C7E] hover:bg-[#075E54] text-white font-black text-[10px] rounded-xl transition-all shadow-sm shrink-0 text-center"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    Share template
+                  </a>
+                </div>
               </div>
 
               {/* Mega Action Button */}
               <div className="pt-1 space-y-2">
-                <button
-                  type="button"
-                  id="promo-copy-btn"
-                  onClick={handleCopyLink}
-                  className={`w-full py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-sm active:scale-[0.98] ${
-                    copied 
-                      ? 'bg-emerald-600 text-white' 
-                      : 'bg-[#028A34] hover:bg-green-800 text-white'
-                  }`}
-                >
-                  {copied ? (
-                    <>
-                      <Check className="w-4 h-4" /> Copied Successfully!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5" /> Copy Invite Link
-                    </>
-                  )}
-                </button>
                 <button
                   type="button"
                   onClick={onClose}

@@ -1457,12 +1457,47 @@ export default function App() {
   };
 
   const [copiedRef, setCopiedRef] = useState(false);
+  const [copiedPromoMsg, setCopiedPromoMsg] = useState(false);
   
+  const getReferralLink = () => {
+    const link = adminApprovalSettings?.customReferralLink;
+    if (link && link.trim() !== '') {
+      if (adminApprovalSettings.isReferralLinkStatic) {
+        return link.trim();
+      }
+      if (link.includes('{CODE}')) {
+        return link.replace('{CODE}', wallet.referralCode).trim();
+      }
+      if (link.endsWith('=')) {
+        return `${link.trim()}${wallet.referralCode}`;
+      }
+      const separator = link.includes('?') ? '&' : '?';
+      return `${link.trim()}${separator}ref=${wallet.referralCode}`;
+    }
+    const baseDomain = "https://laferageinvestmentshares.xyz";
+    return `${baseDomain}?ref=${wallet.referralCode}`;
+  };
+
   const handleCopyRefLink = () => {
-    const refLink = `${window.location.origin}?ref=${wallet.referralCode}`;
-    navigator.clipboard.writeText(refLink);
+    navigator.clipboard.writeText(getReferralLink());
     setCopiedRef(true);
     setTimeout(() => setCopiedRef(false), 2000);
+  };
+
+  const getPromoMessage = (refLink: string) => {
+    return `🏗️ *Lafarge Cement Investment Shares Plc* 🏗️\nSecure your daily passive dividends with Nigeria's premier cement plant expansion options! Backed by physical assets and escrow-safe payouts. 📈\n\n💰 *Onboarding Reward:* Get *₦500.00* instantly credited to your register upon signup!\n📊 *Daily Passive Yields:* Earn up to *2.50% compound interests daily* on flexible options plans (Ewekoro, Sagamu, Mfamosing, Ashaka).\n👥 *Passive Earnings:* Build a network and unlock up to 5 tiers of high-leveraged daily passive commissions!\n\nJoin our active stakeholder network instantly using my unique link:\n👇👇👇\n${refLink}`;
+  };
+
+  const handleCopyPromoMessage = () => {
+    const msg = getPromoMessage(getReferralLink());
+    navigator.clipboard.writeText(msg);
+    setCopiedPromoMsg(true);
+    setTimeout(() => setCopiedPromoMsg(false), 2000);
+  };
+
+  const getWhatsAppShareUrl = () => {
+    const msg = getPromoMessage(getReferralLink());
+    return `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
   };
 
 
@@ -1498,7 +1533,8 @@ export default function App() {
     };
 
     setWallet(newWallet);
-    setRegisteredUsers((prev) => [...prev, newWallet]);
+    const latestUsers = [...registeredUsers, newWallet];
+    setRegisteredUsers(latestUsers);
     setIsLoggedIn(true);
     setIsAdmin(false);
 
@@ -1517,7 +1553,8 @@ export default function App() {
 
     if (newUser.referralUsed) {
       setReferredByCode(newUser.referralUsed);
-      checkAndRecordReferral(newWallet, registeredUsers);
+      localStorage.setItem('lafarge_referred_by_code', newUser.referralUsed);
+      checkAndRecordReferral(newWallet, latestUsers);
     }
     setShowPromoModal(true);
   };
@@ -1780,11 +1817,14 @@ export default function App() {
   };
 
   const handleRegisterUser = (newUser: UserWallet) => {
-    setRegisteredUsers((prev) => [...prev, newUser]);
     isJustRegisteredRef.current = true;
+    const latestUsers = [...registeredUsers, newUser];
+    setRegisteredUsers(latestUsers);
+    
     if (newUser.referredBy) {
       setReferredByCode(newUser.referredBy);
-      checkAndRecordReferral(newUser, registeredUsers);
+      localStorage.setItem('lafarge_referred_by_code', newUser.referredBy);
+      checkAndRecordReferral(newUser, latestUsers);
     }
   };
 
@@ -2330,7 +2370,7 @@ export default function App() {
                     <label className="block text-[10px] uppercase font-bold text-gray-400 tracking-wider">Your Referral Link</label>
                     <div className="flex items-center gap-2 p-1.5 bg-gray-50 border border-slate-100 rounded-xl">
                       <code className="text-[11px] font-mono font-medium text-gray-600 truncate flex-1 pl-1">
-                        {window.location.origin}?ref={wallet.referralCode}
+                        {getReferralLink()}
                       </code>
                       <button
                         onClick={handleCopyRefLink}
@@ -2339,6 +2379,29 @@ export default function App() {
                       >
                         {copiedRef ? <Check className="w-4 h-4 text-[#028A34]" /> : <Copy className="w-4 h-4 text-green-600" />}
                       </button>
+                    </div>
+
+                    {/* Integrated WhatsApp share handles */}
+                    <div className="grid grid-cols-2 gap-2 pt-1 font-sans">
+                      <button
+                        type="button"
+                        onClick={handleCopyPromoMessage}
+                        className="flex items-center justify-center gap-1 py-1.5 px-2.5 border border-green-200 hover:border-green-300 bg-white hover:bg-green-50/40 text-green-700 font-bold text-[10px] rounded-xl transition-all shadow-xs cursor-pointer"
+                        title="Copy pre-written message"
+                      >
+                        {copiedPromoMsg ? <Check className="w-3.5 h-3.5 text-[#028A34]" /> : <Copy className="w-3.5 h-3.5 text-green-600" />}
+                        {copiedPromoMsg ? "Copied" : "Copy Invite Text"}
+                      </button>
+                      <a
+                        href={getWhatsAppShareUrl()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-1 py-1.5 px-2.5 bg-[#128C7E] hover:bg-[#075E54] text-white font-black text-[10px] rounded-xl transition-all shadow-xs shrink-0 text-center"
+                        title="Share promotion directly to WhatsApp"
+                      >
+                        <Share2 className="w-3.5 h-3.5" />
+                        Share to WhatsApp
+                      </a>
                     </div>
                   </div>
 
@@ -2834,6 +2897,7 @@ export default function App() {
               simulatedTime={simulatedTime}
               adminApprovalSettings={adminApprovalSettings}
               registeredUsers={registeredUsers}
+              referralsList={referrals}
             />
           </motion.div>
         )}

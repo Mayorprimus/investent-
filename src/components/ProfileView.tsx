@@ -14,9 +14,10 @@ import {
   EyeOff,
   Award,
   Sparkles,
-  Clock
+  Clock,
+  Share2
 } from 'lucide-react';
-import { UserWallet } from '../types';
+import { UserWallet, ReferralRelationship } from '../types';
 
 interface ProfileViewProps {
   wallet: UserWallet;
@@ -30,6 +31,7 @@ interface ProfileViewProps {
     isReferralLinkStatic?: boolean;
   };
   registeredUsers: UserWallet[];
+  referralsList?: ReferralRelationship[];
 }
 
 export default function ProfileView({ 
@@ -37,10 +39,18 @@ export default function ProfileView({
   onUpdateProfile, 
   simulatedTime, 
   adminApprovalSettings,
-  registeredUsers
+  registeredUsers,
+  referralsList = []
 }: ProfileViewProps) {
   // Precompute multi-level referral counts
   const codeNormalized = (wallet.referralCode || '').trim().toLowerCase();
+  
+  // Filter user referrals
+  const userDirectReferrals = referralsList.filter(
+    (r) => r.referrerEmail.toLowerCase() === wallet.email.toLowerCase() ||
+           r.referrerCode.trim().toLowerCase() === wallet.referralCode.trim().toLowerCase()
+  );
+
   const getNetworkCounts = () => {
     if (!codeNormalized) return { lv1: 0, lv2: 0, lv3: 0, lv4: 0, lv5: 0 };
     
@@ -106,8 +116,9 @@ export default function ProfileView({
   const [pwdSuccess, setPwdSuccess] = useState('');
   const [pwdError, setPwdError] = useState('');
   
-  // Referral link copying
+  // Referral link copying & promotional script variables
   const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedMsg, setCopiedMsg] = useState(false);
 
   const getReferralLink = () => {
     const link = adminApprovalSettings?.customReferralLink;
@@ -127,13 +138,31 @@ export default function ProfileView({
       const separator = link.includes('?') ? '&' : '?';
       return `${link.trim()}${separator}ref=${wallet.referralCode}`;
     }
-    return `${window.location.origin}?ref=${wallet.referralCode}`;
+    // Hardcode custom domain config as priority, with window.location.origin as dynamic auto-fallback
+    const baseDomain = "https://laferageinvestmentshares.xyz";
+    return `${baseDomain}?ref=${wallet.referralCode}`;
   };
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(getReferralLink());
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  const getPromoMessage = (refLink: string) => {
+    return `🏗️ *Lafarge Cement Investment Shares Plc* 🏗️\nSecure your daily passive dividends with Nigeria's premier cement plant expansion options! Backed by physical assets and escrow-safe payouts. 📈\n\n💰 *Onboarding Reward:* Get *₦500.00* instantly credited to your register upon signup!\n📊 *Daily Passive Yields:* Earn up to *2.50% compound interests daily* on flexible options plans (Ewekoro, Sagamu, Mfamosing, Ashaka).\n👥 *Passive Earnings:* Build a network and unlock up to 5 tiers of high-leveraged daily passive commissions!\n\nJoin our active stakeholder network instantly using my unique link:\n👇👇👇\n${refLink}`;
+  };
+
+  const handleCopyMemo = () => {
+    const msg = getPromoMessage(getReferralLink());
+    navigator.clipboard.writeText(msg);
+    setCopiedMsg(true);
+    setTimeout(() => setCopiedMsg(false), 2000);
+  };
+
+  const getWhatsAppShareUrl = () => {
+    const msg = getPromoMessage(getReferralLink());
+    return `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
   };
 
   // Submit bank/account updates
@@ -407,7 +436,100 @@ export default function ProfileView({
                   </button>
                 </div>
               </div>
+
+              {/* Dynamic WhatsApp Pre-written templates & easy click-to-share actions */}
+              <div className="border-t border-gray-100 pt-3.5 space-y-2">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block font-sans">WhatsApp Promos Ledger</span>
+                
+                {/* Simulated rendering preview */}
+                <div className="p-2.5 bg-green-50/25 border border-green-100/30 rounded-xl text-[9.5px] leading-relaxed text-slate-700 font-medium">
+                  <span className="font-extrabold text-green-850 block mb-1">📢 Highlight Invite Pitch Message:</span>
+                  <p className="text-gray-500 select-all font-sans italic">
+                    "🏗️ *Lafarge Cement Investment Shares Plc* 🏗️ Secure your daily passive dividends with Nigeria's premier cement plant expansion options..."
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 font-sans">
+                  <button
+                    id="btn-copy-pitch"
+                    type="button"
+                    onClick={handleCopyMemo}
+                    className="flex items-center justify-center gap-1.5 py-2 px-3 border border-green-200 hover:border-green-300 bg-white hover:bg-green-50/40 text-green-750 font-bold text-[10.5px] rounded-xl transition-all shadow-xs cursor-pointer"
+                  >
+                    {copiedMsg ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedMsg ? "Message Copied!" : "Copy Invite Text"}
+                  </button>
+                  <a
+                    id="btn-whatsapp-direct"
+                    href={getWhatsAppShareUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-1.5 py-2 px-3 bg-[#128C7E] hover:bg-[#075E54] text-white font-black text-[10.5px] rounded-xl transition-all shadow-sm shrink-0 text-center"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    Share to WhatsApp
+                  </a>
+                </div>
+              </div>
             </div>
+          </div>
+
+          {/* Direct Referrals Registry Log */}
+          <div id="referred-members-register" className="bg-white border border-gray-150 rounded-2xl p-5 shadow-sm space-y-4 font-sans text-xs">
+            <div className="flex gap-2.5 items-center justify-between">
+              <div className="flex gap-2.5 items-center">
+                <div className="w-8 h-8 rounded-lg bg-emerald-55/10 border border-emerald-100 flex items-center justify-center text-[#028A34]">
+                  <CheckCircle className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-950 text-sm leading-tight font-sans">Your Referrals Queue</h4>
+                  <p className="text-[10px] font-semibold text-gray-400 font-sans">Track real-time admin audit approvals</p>
+                </div>
+              </div>
+              <span className="text-[9px] font-mono font-black text-green-800 bg-green-50 px-2.5 py-1 rounded-lg border border-green-100 uppercase tracking-widest shrink-0 select-none">
+                {userDirectReferrals.length} Tenders
+              </span>
+            </div>
+
+            {userDirectReferrals.length === 0 ? (
+              <div className="p-4 bg-slate-50/50 rounded-xl border border-dashed border-gray-200 text-center space-y-1">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest font-sans">No referrals listed</p>
+                <p className="text-[9.5px] text-gray-500 font-medium leading-relaxed font-sans">
+                  Provide your unique invite URL to candidates. Once they configure their profile ledger, they will appear here as pending supervisor confirmation!
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3.5 max-h-72 overflow-y-auto pr-1">
+                {userDirectReferrals.map((ref) => (
+                  <div key={ref.id} className="p-3 bg-gray-50 border border-slate-100 rounded-xl space-y-2">
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-[11px] font-extrabold text-slate-800 truncate block font-sans">
+                        {ref.referredName}
+                      </span>
+                      <span className={`text-[8.5px] font-black uppercase px-2 py-0.5 rounded border tracking-wider shrink-0 font-sans ${
+                        ref.status === 'approved'
+                          ? 'bg-green-50 border-green-200 text-green-700 font-bold'
+                          : ref.status === 'rejected'
+                          ? 'bg-red-50 border-red-150 text-red-650 font-bold'
+                          : 'bg-yellow-50 border-yellow-200 text-yellow-850 animate-pulse font-bold'
+                      }`}>
+                        {ref.status === 'approved' ? 'Confirmed' : ref.status === 'rejected' ? 'Declined' : 'Pending Audit'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-end gap-1.5 font-mono text-[9px] text-gray-400">
+                      <span className="font-semibold truncate">{ref.referredEmail}</span>
+                      <span className="font-bold shrink-0">{new Date(ref.date).toLocaleDateString()}</span>
+                    </div>
+
+                    {ref.status === 'pending' && (
+                      <div className="text-[8.5px] text-amber-805 leading-normal font-medium bg-amber-50/30 p-2 border border-amber-100/30 rounded-lg font-sans">
+                        ⚠️ Pending Admin approval on the supervisor console. Your bonus yield of ₦505.00 will be released immediately upon checking.
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
