@@ -41,7 +41,7 @@ export default function VirtualTimeMachine({
         <div className="space-y-1">
           <h3 className="text-xl font-bold font-sans">Accelerate Stock Platform Time</h3>
           <p className="text-xs text-green-200/80 max-w-md">
-            Skip days instantly to test dividend accrual. Held Lafarge share options automatically accumulate 15% profits every 24 hours (₦450 per ₦3,000)!
+            Skip days instantly to test dividend accrual. Held Lafarge share options automatically accumulate high compound dividends over their 30-day term cycle!
           </p>
         </div>
         

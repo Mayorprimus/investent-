@@ -91,7 +91,7 @@ export default function ActiveInvestments({
           </div>
           <div className="space-y-1">
             <h4 className="font-bold text-gray-900 text-sm">No Active Positions</h4>
-            <p className="text-xs text-gray-400 flex flex-col md:inline">You do not hold any Lafarge shares right now. Acquire shares or bonds to start receiving daily dividends of 2.50% (e.g., ₦75 daily per ₦3,000).</p>
+            <p className="text-xs text-gray-400 flex flex-col md:inline">You do not hold any Lafarge shares right now. Acquire shares or bonds to start receiving daily dividends (e.g., ₦1,500 plan to yield ₦15,000 in 30 days).</p>
           </div>
           <button
             id="btn-no-invest-shortcut"

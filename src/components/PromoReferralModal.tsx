@@ -46,7 +46,7 @@ export default function PromoReferralModal({ isOpen, onClose, wallet, adminAppro
   };
 
   const getPromoMessage = (refLink: string) => {
-    return `🏗️ *Lafarge Cement Investment Shares Plc* 🏗️\nSecure your daily passive dividends with Nigeria's premier cement plant expansion options! Backed by physical assets and escrow-safe payouts. 📈\n\n💰 *Onboarding Reward:* Get *₦500.00* instantly credited to your register upon signup!\n📊 *Daily Passive Yields:* Earn up to *2.50% compound interests daily* on flexible options plans (Ewekoro, Sagamu, Mfamosing, Ashaka).\n👥 *Passive Earnings:* Build a network and unlock up to 5 tiers of high-leveraged daily passive commissions!\n\nJoin our active stakeholder network instantly using my unique link:\n👇👇👇\n${refLink}`;
+    return `🏗️ *Lafarge Cement Investment Shares Plc* 🏗️\nSecure your daily passive dividends with Nigeria's premier cement plant expansion options! Backed by physical assets and escrow-safe payouts. 📈\n\n💰 *Onboarding Reward:* Get *₦500.00* instantly credited to your register upon signup!\n📊 *Daily Passive Yields:* Earn up to *26.67% daily dividends* on professional options plans (Lagoon, Ewekoro, Sagamu, Ashaka, Mfamosing, Calabar).\n👥 *Passive Earnings:* Build a network and unlock up to 5 tiers of high-leveraged daily passive commissions starting from 0.1%!\n\nJoin our active stakeholder network instantly using my unique link:\n👇👇👇\n${refLink}`;
   };
 
   const handleCopyPromo = () => {
@@ -114,7 +114,7 @@ export default function PromoReferralModal({ isOpen, onClose, wallet, adminAppro
                 </h3>
                 <p className="text-[11px] text-gray-500 font-semibold max-w-xs mx-auto leading-relaxed">
                   Every user you invite credits your balance with <strong className="text-green-800">₦500.00</strong> setup bonus. 
-                  Plus, unlock up to <strong className="text-emerald-700">5 levels of daily network commission</strong> starting from 1.0% (Level 1) up to 5.0% (Level 5) as your referral footprint expands!
+                  Plus, unlock up to <strong className="text-emerald-700">5 levels of daily network commission</strong> starting from 0.1% (Level 1) up to 0.5% (Level 5) as your referral footprint expands!
                 </p>
               </div>
 

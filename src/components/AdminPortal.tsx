@@ -50,6 +50,7 @@ interface AdminPortalProps {
     isReferralLinkStatic?: boolean;
     csNumber?: string;
     officialWhatsAppGroup?: string;
+    minReferralWithdrawal?: number;
   };
   onSaveSettings: (settings: {
     requireDepositApproval: boolean;
@@ -59,6 +60,7 @@ interface AdminPortalProps {
     isReferralLinkStatic?: boolean;
     csNumber?: string;
     officialWhatsAppGroup?: string;
+    minReferralWithdrawal?: number;
   }) => void;
   onApproveDeposit: (txId: string) => void;
   onDeclineDeposit: (txId: string) => void;
@@ -146,6 +148,7 @@ export default function AdminPortal({
   const [isRefLinkStatic, setIsRefLinkStatic] = useState(adminApprovalSettings.isReferralLinkStatic || false);
   const [adminCsNumber, setAdminCsNumber] = useState(adminApprovalSettings.csNumber || '08158432605');
   const [adminGroupLink, setAdminGroupLink] = useState(adminApprovalSettings.officialWhatsAppGroup || 'https://chat.whatsapp.com/KHZgCi1h24154DqIIHz3VE');
+  const [adminMinRefWithdrawal, setAdminMinRefWithdrawal] = useState(adminApprovalSettings.minReferralWithdrawal || 5000);
   const [settingsSuccessMsg, setSettingsSuccessMsg] = useState('');
 
   useEffect(() => {
@@ -154,6 +157,7 @@ export default function AdminPortal({
       setIsRefLinkStatic(adminApprovalSettings.isReferralLinkStatic || false);
       setAdminCsNumber(adminApprovalSettings.csNumber || '08158432605');
       setAdminGroupLink(adminApprovalSettings.officialWhatsAppGroup || 'https://chat.whatsapp.com/KHZgCi1h24154DqIIHz3VE');
+      setAdminMinRefWithdrawal(adminApprovalSettings.minReferralWithdrawal ?? 5000);
     }
   }, [adminApprovalSettings]);
 
@@ -317,7 +321,8 @@ export default function AdminPortal({
       customReferralLink: customRefLink,
       isReferralLinkStatic: isRefLinkStatic,
       csNumber: adminCsNumber,
-      officialWhatsAppGroup: adminGroupLink
+      officialWhatsAppGroup: adminGroupLink,
+      minReferralWithdrawal: Number(adminMinRefWithdrawal) || 5000
     });
     setSettingsSuccessMsg('Platform policy settings successfully saved and deployed live!');
     setTimeout(() => setSettingsSuccessMsg(''), 4000);
@@ -1396,6 +1401,25 @@ export default function AdminPortal({
                 />
                 <p className="text-[10px] text-gray-500 font-semibold leading-relaxed">
                   Leave blank to use the default web domain. Include placeholder <code>{"{CODE}"}</code> if you need the referral code inserted at a custom location, otherwise it will append <code>?ref=CODE</code> (or <code>&ref=CODE</code> if the link already contains options).
+                </p>
+              </div>
+
+              <div className="space-y-1.5 p-4 border border-zinc-150 bg-gray-50/50 rounded-2xl">
+                <label className="block text-[10px] uppercase font-black text-gray-450 tracking-wider">
+                  ₦ Minimum Withdrawal for Referral Members
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">₦</span>
+                  <input
+                    type="number"
+                    value={adminMinRefWithdrawal}
+                    onChange={(e) => setAdminMinRefWithdrawal(Number(e.target.value) || 0)}
+                    placeholder="e.g. 5000"
+                    className="w-full bg-white border border-gray-200 rounded-xl pl-7 pr-3 py-2 text-xs font-semibold text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#028A34]"
+                  />
+                </div>
+                <p className="text-[10px] text-gray-500 font-semibold leading-relaxed">
+                  Override the minimum eligible withdrawal amount for accounts that have referral records (currently <strong className="text-gray-850">₦{Number(adminMinRefWithdrawal).toLocaleString()}</strong>). Adjust anytime to 10,000 or any preferred value.
                 </p>
               </div>
 

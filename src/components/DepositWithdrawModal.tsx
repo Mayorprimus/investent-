@@ -14,6 +14,10 @@ interface DepositWithdrawModalProps {
   depositAccounts: DepositAccount[];
   registeredUsers?: UserWallet[];
   transactions?: Transaction[];
+  adminApprovalSettings?: {
+    minReferralWithdrawal?: number;
+    [key: string]: any;
+  };
 }
 
 export default function DepositWithdrawModal({
@@ -26,8 +30,12 @@ export default function DepositWithdrawModal({
   wallet,
   depositAccounts,
   registeredUsers = [],
-  transactions = []
+  transactions = [],
+  adminApprovalSettings = {}
 }: DepositWithdrawModalProps) {
+  const minRefWithdrawal = adminApprovalSettings?.minReferralWithdrawal || 5000;
+  const userHasReferrals = !!((wallet.referralsCount && wallet.referralsCount > 0) || (wallet.referralEarnings && wallet.referralEarnings > 0));
+
   const [amount, setAmount] = useState<string>('');
   const [method, setMethod] = useState<'bank' | 'card' | 'crypto'>('bank');
   
@@ -120,13 +128,21 @@ export default function DepositWithdrawModal({
         setErrorMessage(`Insufficient funds. Your local balance is ${formatNGN(walletBalance)}.`);
         return false;
       }
-      if (amtNum < 3000) {
-        setErrorMessage('Minimum withdrawal amount is ₦3,000.00.');
-        return false;
+      
+      if (userHasReferrals) {
+        if (amtNum < minRefWithdrawal) {
+          setErrorMessage(`Minimum withdrawal amount for referral participants is ${formatNGN(minRefWithdrawal)}.`);
+          return false;
+        }
+      } else {
+        if (amtNum < 2000) {
+          setErrorMessage('Minimum withdrawal amount is ₦2,000.00.');
+          return false;
+        }
       }
     } else {
-      if (amtNum < 3000) {
-        setErrorMessage('Minimum deposit amount is ₦3,000.00 to match Lafarge share starter packages.');
+      if (amtNum < 1000) {
+        setErrorMessage('Minimum deposit amount is ₦1,000.00 to match Lafarge share starter packages.');
         return false;
       }
     }
@@ -259,14 +275,14 @@ export default function DepositWithdrawModal({
                 <input
                   id="input-amount"
                   type="number"
-                  placeholder="3,000"
+                  placeholder={type === 'deposit' ? "1,000" : (userHasReferrals ? String(minRefWithdrawal) : "2,000")}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className="w-full pl-9 pr-4 py-3.5 border-2 border-green-100 rounded-xl text-3xl font-bold bg-gray-50 focus:bg-white focus:border-green-500 focus:outline-none transition-all placeholder:text-gray-300 text-gray-800"
                 />
               </div>
               <div className="mt-2 flex justify-between text-xs text-gray-400">
-                <span>Min: ₦3,000.00</span>
+                <span>Min: ₦{type === 'deposit' ? '1,000.00' : (userHasReferrals ? minRefWithdrawal.toLocaleString() + '.00' : '2,000.00')}</span>
                 {type === 'withdraw' && (
                   <span>Withdrawable Balance: <strong className="text-green-700">{formatNGN(walletBalance)}</strong></span>
                 )}
@@ -275,7 +291,7 @@ export default function DepositWithdrawModal({
 
             {/* Quick amount shortcuts in Naira */}
             <div className="grid grid-cols-4 gap-2">
-              {(type === 'deposit' ? [3000, 10000, 50000, 200000] : [3000, 12000, 60000, walletBalance]).map((preset, idx) => {
+              {(type === 'deposit' ? [1500, 3000, 5000, 10000] : (userHasReferrals ? [minRefWithdrawal, minRefWithdrawal * 2, minRefWithdrawal * 5, walletBalance] : [2000, 5000, 15000, walletBalance])).map((preset, idx) => {
                 const isMax = idx === 3 && type === 'withdraw';
                 if (preset <= 0) return null;
                 return (

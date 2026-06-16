@@ -4,7 +4,7 @@ import { formatNGN } from '../utils';
 import { productsList } from '../data';
 
 export default function Calculator() {
-  const [calcAmount, setCalcAmount] = useState<number>(3000);
+  const [calcAmount, setCalcAmount] = useState<number>(1500);
   const [cycles, setCycles] = useState<number>(3); // default 3 cycles
 
   // Find the highest product we qualify for based on simulation amount
@@ -47,18 +47,18 @@ export default function Calculator() {
             <input
               id="calculator-range-amount"
               type="range"
-              min="3000"
-              max="500000"
-              step="1000"
+              min="1500"
+              max="30000"
+              step="500"
               value={calcAmount}
               onChange={(e) => setCalcAmount(parseInt(e.target.value))}
               className="w-full h-2 bg-gray-150 rounded-lg appearance-none cursor-pointer accent-green-600 focus:outline-none"
             />
             <div className="flex justify-between text-[10px] text-gray-400 font-semibold uppercase">
-              <span>₦3,000</span>
-              <span>₦100,000</span>
-              <span>₦250,500</span>
-              <span>₦500,000</span>
+              <span>₦1,500</span>
+              <span>₦10,000</span>
+              <span>₦20,000</span>
+              <span>₦30,000</span>
             </div>
           </div>
 

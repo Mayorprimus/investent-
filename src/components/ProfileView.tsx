@@ -150,7 +150,7 @@ export default function ProfileView({
   };
 
   const getPromoMessage = (refLink: string) => {
-    return `🏗️ *Lafarge Cement Investment Shares Plc* 🏗️\nSecure your daily passive dividends with Nigeria's premier cement plant expansion options! Backed by physical assets and escrow-safe payouts. 📈\n\n💰 *Onboarding Reward:* Get *₦500.00* instantly credited to your register upon signup!\n📊 *Daily Passive Yields:* Earn up to *2.50% compound interests daily* on flexible options plans (Ewekoro, Sagamu, Mfamosing, Ashaka).\n👥 *Passive Earnings:* Build a network and unlock up to 5 tiers of high-leveraged daily passive commissions!\n\nJoin our active stakeholder network instantly using my unique link:\n👇👇👇\n${refLink}`;
+    return `🏗️ *Lafarge Cement Investment Shares Plc* 🏗️\nSecure your daily passive dividends with Nigeria's premier cement plant expansion options! Backed by physical assets and escrow-safe payouts. 📈\n\n💰 *Onboarding Reward:* Get *₦500.00* instantly credited to your register upon signup!\n📊 *Daily Passive Yields:* Earn up to *26.67% daily dividends* on professional options plans (Lagoon, Ewekoro, Sagamu, Ashaka, Mfamosing, Calabar).\n👥 *Passive Earnings:* Build a network and unlock up to 5 tiers of high-leveraged daily passive commissions starting from 0.1%!\n\nJoin our active stakeholder network instantly using my unique link:\n👇👇👇\n${refLink}`;
   };
 
   const handleCopyMemo = () => {

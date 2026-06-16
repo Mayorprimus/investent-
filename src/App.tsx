@@ -63,7 +63,8 @@ export default function App() {
     customReferralLink: '',
     isReferralLinkStatic: false,
     csNumber: '08158432605',
-    officialWhatsAppGroup: 'https://chat.whatsapp.com/KHZgCi1h24154DqIIHz3VE'
+    officialWhatsAppGroup: 'https://chat.whatsapp.com/KHZgCi1h24154DqIIHz3VE',
+    minReferralWithdrawal: 5000
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
@@ -283,11 +284,11 @@ export default function App() {
         endDate: Date.now() + 10 * 24 * 60 * 60 * 1000,   // 10 days left for 11-day cycle
         lastAccrualTime: Date.now() - 1 * 24 * 60 * 60 * 1000,
         status: 'active',
-        totalAccrued: 750, // ₦750 daily dividend (2.50% of ₦30,000) pre-accrued for demonstration!
-        expectedReturn: 8250, // 2.50% daily * 11 days on 30,000 is 8,250 profit
+        totalAccrued: 7800, // ₦7,800 daily dividend (26.0% of ₦30,000) pre-accrued for demonstration!
+        expectedReturn: 234000, // 26.0% daily * 30 days on 30,000 is 234,000 profit
         isCompounding: true,
-        termDays: 11,
-        rate: 0.025,
+        termDays: 30,
+        rate: 0.26,
         userEmail: 'jeremiahobazee11@gmail.com'
       }
     ];
@@ -538,7 +539,8 @@ export default function App() {
                 customReferralLink: data.adminApprovalSettings.customReferralLink ?? '',
                 isReferralLinkStatic: data.adminApprovalSettings.isReferralLinkStatic ?? false,
                 csNumber: data.adminApprovalSettings.csNumber ?? '08158432605',
-                officialWhatsAppGroup: data.adminApprovalSettings.officialWhatsAppGroup ?? 'https://chat.whatsapp.com/KHZgCi1h24154DqIIHz3VE'
+                officialWhatsAppGroup: data.adminApprovalSettings.officialWhatsAppGroup ?? 'https://chat.whatsapp.com/KHZgCi1h24154DqIIHz3VE',
+                minReferralWithdrawal: data.adminApprovalSettings.minReferralWithdrawal ?? 5000
               });
             }
 
@@ -841,22 +843,22 @@ export default function App() {
               const counts = userNetworkCounts[referrerEmailLower] || { lv1: 0, lv2: 0, lv3: 0, lv4: 0, lv5: 0 };
 
               // Check commission rates and referral requirements per level:
-              // Level 1: 1.0% (Unlocked if level 1 refs >= 5)
-              // Level 2: 2.0% (Unlocked if level 2 refs >= 10)
-              // Level 3: 3.0% (Unlocked if level 3 refs >= 15)
-              // Level 4: 4.0% (Unlocked if level 4 refs >= 20)
-              // Level 5: 5.0% (Unlocked if level 5 refs >= 25)
+              // Level 1: 0.1% (Unlocked if level 1 refs >= 5)
+              // Level 2: 0.2% (Unlocked if level 2 refs >= 10)
+              // Level 3: 0.3% (Unlocked if level 3 refs >= 15)
+              // Level 4: 0.4% (Unlocked if level 4 refs >= 20)
+              // Level 5: 0.5% (Unlocked if level 5 refs >= 25)
               let commRate = 0;
               if (level === 1 && counts.lv1 >= 5) {
-                commRate = 0.01;
+                commRate = 0.001;
               } else if (level === 2 && counts.lv2 >= 10) {
-                commRate = 0.02;
+                commRate = 0.002;
               } else if (level === 3 && counts.lv3 >= 15) {
-                commRate = 0.03;
+                commRate = 0.003;
               } else if (level === 4 && counts.lv4 >= 20) {
-                commRate = 0.04;
+                commRate = 0.004;
               } else if (level === 5 && counts.lv5 >= 25) {
-                commRate = 0.05;
+                commRate = 0.005;
               }
 
               if (commRate > 0) {
@@ -1485,7 +1487,7 @@ export default function App() {
   };
 
   const getPromoMessage = (refLink: string) => {
-    return `🏗️ *Lafarge Cement Investment Shares Plc* 🏗️\nSecure your daily passive dividends with Nigeria's premier cement plant expansion options! Backed by physical assets and escrow-safe payouts. 📈\n\n💰 *Onboarding Reward:* Get *₦500.00* instantly credited to your register upon signup!\n📊 *Daily Passive Yields:* Earn up to *2.50% compound interests daily* on flexible options plans (Ewekoro, Sagamu, Mfamosing, Ashaka).\n👥 *Passive Earnings:* Build a network and unlock up to 5 tiers of high-leveraged daily passive commissions!\n\nJoin our active stakeholder network instantly using my unique link:\n👇👇👇\n${refLink}`;
+    return `🏗️ *Lafarge Cement Investment Shares Plc* 🏗️\nSecure your daily passive dividends with Nigeria's premier cement plant expansion options! Backed by physical assets and escrow-safe payouts. 📈\n\n💰 *Onboarding Reward:* Get *₦500.00* instantly credited to your register upon signup!\n📊 *Daily Passive Yields:* Earn up to *26.67% daily dividends* on professional options plans (Lagoon, Ewekoro, Sagamu, Ashaka, Mfamosing, Calabar).\n👥 *Passive Earnings:* Build a network and unlock up to 5 tiers of high-leveraged daily passive commissions!\n\nJoin our active stakeholder network instantly using my unique link:\n👇👇👇\n${refLink}`;
   };
 
   const handleCopyPromoMessage = () => {
@@ -1622,9 +1624,9 @@ export default function App() {
       } else if (textLower.includes('deposit') || textLower.includes('fund') || textLower.includes('paystack') || textLower.includes('pay')) {
         responseText = "Our payment gateway supports secure instant bank deposits. Transfers typically verify within 1 to 5 minutes. If you completed a deposit and are waiting for it to show, please click 'Simulate Referee Deposit' on the dashboard referral card, or contact us with your reference number.";
       } else if (textLower.includes('refer') || textLower.includes('ref') || textLower.includes('bonus') || textLower.includes('friend') || textLower.includes('comm')) {
-        responseText = "For every teammate you refer, you get ₦500.00 instantly upon their first concrete options placement. PLUS, you unlock up to 5 levels of high-yield daily passive commissions synchronized with their yield structure (Level 1: 1.0% at 5 refs, Level 2: 2.0% at 10 refs, Level 3: 3.0% at 15 refs, Level 4: 4.0% at 20 refs, Level 5: 5.0% at 25 refs)! Test this using the 'Simulate Referee Deposit' switch on your dashboard.";
+        responseText = "For every teammate you refer, you get ₦500.00 instantly upon their first concrete options placement. PLUS, you unlock up to 5 levels of high-yield daily passive commissions synchronized with their yield structure (Level 1: 0.1% at 5 refs, Level 2: 0.2% at 10 refs, Level 3: 0.3% at 15 refs, Level 4: 0.4% at 20 refs, Level 5: 0.5% at 25 refs)! Test this using the 'Simulate Referee Deposit' switch on your dashboard.";
       } else if (textLower.includes('comp') || textLower.includes('interest') || textLower.includes('rate') || textLower.includes('percent')) {
-        responseText = "Lafarge's high-yield daily dividend packages (offering a flat 2.50% daily return across all option tiers) roll over for 15 days down to 6 days. Both your principal capital and the accrued profits automatically compound into another cycle, compounding your returns exponentially!";
+        responseText = "Lafarge's high-yield daily dividend packages (offering up to 26.67% daily return depending on your chosen tier) rollover after a fixed 30-day cycle. Both your principal capital and the accrued profits automatically compound into another cycle, compounding your returns exponentially!";
       }
 
       setUserChatThreads(prev => {
@@ -2147,11 +2149,11 @@ export default function App() {
                       })();
 
                       return [
-                        { level: 1, rate: '1.0%', desc: 'Bronze Shareholder', req: 5, current: netCounts.lv1, name: 'Bronze' },
-                        { level: 2, rate: '2.0%', desc: 'Silver Shareholder', req: 10, current: netCounts.lv2, name: 'Silver' },
-                        { level: 3, rate: '3.0%', desc: 'Gold Shareholder', req: 15, current: netCounts.lv3, name: 'Gold' },
-                        { level: 4, rate: '4.0%', desc: 'Platinum Shareholder', req: 20, current: netCounts.lv4, name: 'Platinum' },
-                        { level: 5, rate: '5.0%', desc: 'Diamond Shareholder', req: 25, current: netCounts.lv5, name: 'Diamond' }
+                        { level: 1, rate: '0.1%', desc: 'Bronze Shareholder', req: 5, current: netCounts.lv1, name: 'Bronze' },
+                        { level: 2, rate: '0.2%', desc: 'Silver Shareholder', req: 10, current: netCounts.lv2, name: 'Silver' },
+                        { level: 3, rate: '0.3%', desc: 'Gold Shareholder', req: 15, current: netCounts.lv3, name: 'Gold' },
+                        { level: 4, rate: '0.4%', desc: 'Platinum Shareholder', req: 20, current: netCounts.lv4, name: 'Platinum' },
+                        { level: 5, rate: '0.5%', desc: 'Diamond Shareholder', req: 25, current: netCounts.lv5, name: 'Diamond' }
                       ].map((lv) => {
                         const isUnlocked = lv.current >= lv.req;
                         return (
@@ -2503,7 +2505,7 @@ export default function App() {
           >
             <div className="border-b border-green-150 pb-5">
               <h2 className="text-2xl md:text-3xl font-display font-black text-gray-950 tracking-tight">Cement Production Stock Options</h2>
-              <p className="text-sm text-gray-500 mt-1 max-w-xl">Acquire shares in Nigeria's leading building material assets. Get an immediate 2.50% daily dividend payoff with options ranging from 15 days down to 6 days.</p>
+              <p className="text-sm text-gray-500 mt-1 max-w-xl">Acquire shares in Nigeria's leading building material assets. Get robust daily dividends (up to 26.67% daily) with flexible options on static 30-day corporate schedules.</p>
             </div>
 
             {/* Product card matrix */}
@@ -2558,15 +2560,15 @@ export default function App() {
                 },
                 {
                   q: 'How does the daily dividend payout work?',
-                  a: 'For every day your chosen cement position remains active, you accumulate high-yield daily returns of 2.50% of your initial position value (e.g., ₦75 daily on ₦3,000 Ewekoro Starter allocation). These yields accumulate in real-time, allowing you to withdraw them daily to your liquid cash balance, or roll them forward compounding up!'
+                  a: 'For every day your chosen cement position remains active, you accumulate high-yield daily returns. For instance, a ₦1,500 Lagoon Starter allocation yields up to ₦12,000 total returned upon maturity, and a ₦30,000 Calabar Port allocation yields ₦234,000 total returned. These yields accumulate in real-time, allowing you to withdraw them or roll them forward compounding up!'
                 },
                 {
                   q: 'What is the lock-in period for cement shares?',
-                  a: 'Positions are held in specific term cycles (ranging from 15 days for Ewekoro Starter down to 6 days for Expansion Bonds depending on the tier). Once the term elapses, the position matures, releasing 100% of your initial capital back into your liquid wallet for manual withdrawal or compounding.'
+                  a: 'All positions are held in a fixed 30-day term cycle. Once the term elapses, the position matures, releasing 100% of your initial capital and accrued yields back into your liquid wallet for manual withdrawal or compounding.'
                 },
                 {
                   q: 'What is the Multi-Level Daily Referral Commission system?',
-                  a: 'We offer a highly rewarding 5-tier network structure. Beyond the setup onboarding bonus of ₦500.00, we reward our most active members with daily passive commissions proportional to their team\'s options yield: Level 1 (1.0% unlocked at 5 refs), Level 2 (2.0% unlocked at 10 refs), Level 3 (3.0% unlocked at 15 refs), Level 4 (4.0% unlocked at 20 refs), and Level 5 (5.0% unlocked at 25 refs).'
+                  a: 'We offer a highly rewarding 5-tier network structure. Beyond the setup onboarding bonus of ₦500.00, we reward our most active members with daily passive commissions proportional to their team\'s options yield: Level 1 (0.1% unlocked at 5 refs), Level 2 (0.2% unlocked at 10 refs), Level 3 (0.3% unlocked at 15 refs), Level 4 (0.4% unlocked at 20 refs), and Level 5 (0.5% unlocked at 25 refs).'
                 },
                 {
                   q: 'What are the channels for depositing and withdrawing funds?',
@@ -2921,7 +2923,8 @@ export default function App() {
                 customReferralLink: settings.customReferralLink || '',
                 isReferralLinkStatic: !!settings.isReferralLinkStatic,
                 csNumber: settings.csNumber || '08158432605',
-                officialWhatsAppGroup: settings.officialWhatsAppGroup || 'https://chat.whatsapp.com/KHZgCi1h24154DqIIHz3VE'
+                officialWhatsAppGroup: settings.officialWhatsAppGroup || 'https://chat.whatsapp.com/KHZgCi1h24154DqIIHz3VE',
+                minReferralWithdrawal: Number(settings.minReferralWithdrawal) || 5000
               })}
               onApproveDeposit={handleApproveDeposit}
               onDeclineDeposit={handleDeclineDeposit}
@@ -2964,6 +2967,7 @@ export default function App() {
         depositAccounts={depositAccounts}
         registeredUsers={registeredUsers}
         transactions={transactions}
+        adminApprovalSettings={adminApprovalSettings}
       />
 
       <RegisterModal

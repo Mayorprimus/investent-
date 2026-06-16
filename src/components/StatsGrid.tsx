@@ -25,9 +25,9 @@ export default function StatsGrid({ wallet, onOpenModal, activeInvestments = [] 
             <Sparkles className="w-5 h-5 animate-pulse" />
           </div>
           <div>
-            <h4 className="font-bold text-gray-900 text-sm md:text-base">2.50% Daily Dividends Active</h4>
+            <h4 className="font-bold text-gray-900 text-sm md:text-base">High-Yield Daily Dividends Active</h4>
             <p className="text-gray-500 text-xs mt-0.5 max-w-xl">
-              Acquire Lafarge Africa Plc production shares starting at ₦3,000 to generate guaranteed daily dividends (2.50% daily). Fast compounding options live!
+              Acquire Lafarge Africa Plc production shares starting at ₦1,500 to yield robust daily dividends (up to 26.67% daily) on 30-day corporate cycles!
             </p>
           </div>
         </div>
