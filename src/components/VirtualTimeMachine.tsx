@@ -80,18 +80,18 @@ export default function VirtualTimeMachine({
             className="py-3 bg-green-800 hover:bg-green-750 text-white rounded-xl text-xs font-semibold border border-green-700/50 hover:border-green-500 active:scale-95 transition-all text-center cursor-pointer flex flex-col items-center justify-center gap-0.5 shadow"
           >
             <span className="text-sm font-bold tracking-tight">+1 Day</span>
-            <span className="text-[8px] opacity-75 font-medium">15% Dividend</span>
+            <span className="text-[8px] opacity-75 font-medium">Daily Dividend</span>
           </button>
 
           <button
-            id="btn-time-leap-15d"
-            onClick={() => handleLeap(15)}
+            id="btn-time-leap-30d"
+            onClick={() => handleLeap(30)}
             className="py-3 bg-white hover:bg-green-50 text-green-950 rounded-xl text-xs font-semibold active:scale-95 transition-all text-center cursor-pointer flex flex-col items-center justify-center gap-0.5 shadow-md shadow-green-950/20"
           >
             <span className="text-sm font-black tracking-tight flex items-center gap-1">
-              <FastForward className="w-3.5 h-3.5 fill-green-950 text-green-950" /> +15 Days
+              <FastForward className="w-3.5 h-3.5 fill-green-950 text-green-950" /> +30 Days
             </span>
-            <span className="text-[8px] text-[#028A34] font-extrabold">+225% Payout</span>
+            <span className="text-[8px] text-[#028A34] font-extrabold">Complete Cycle</span>
           </button>
         </div>
 
