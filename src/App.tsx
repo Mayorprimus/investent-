@@ -23,7 +23,8 @@ import {
   Send,
   User,
   Share2,
-  Sparkles
+  Sparkles,
+  Phone
 } from 'lucide-react';
 
 import { ActiveInvestment, UserWallet, Transaction, SupportTicket, DepositAccount, ReferralRelationship } from './types';
@@ -2721,35 +2722,23 @@ export default function App() {
                   <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">Fast Support Hotline channels</h4>
                   
                   <div className="space-y-2.5">
-                    {(() => {
-                      const rawNum = adminApprovalSettings.csNumber || '08158432605';
-                      let cleaned = rawNum.replace(/\D/g, '');
-                      if (cleaned.startsWith('0')) {
-                        cleaned = '234' + cleaned.substring(1);
-                      } else if (!cleaned.startsWith('234') && cleaned.length === 10) {
-                        cleaned = '234' + cleaned;
-                      }
-                      const waLink = `https://wa.me/${cleaned}`;
-                      return (
-                        <a 
-                          href={waLink} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="flex items-center justify-between p-3 border border-green-100 bg-green-50/20 hover:bg-green-50/50 rounded-xl transition-all cursor-pointer group"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 bg-green-500 rounded-lg text-white flex items-center justify-center font-bold">
-                              <MessageSquare className="w-4 h-4" />
-                            </div>
-                            <div>
-                              <p className="text-xs font-bold text-gray-900">Direct WhatsApp Account Desk</p>
-                              <p className="text-[10px] text-gray-400 font-semibold">Immediate 1-on-1 chatting support ({rawNum})</p>
-                            </div>
-                          </div>
-                          <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-[#028A34] transition-colors" />
-                        </a>
-                      );
-                    })()}
+                    <a 
+                      href="https://t.me/DEVVERTEX" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between p-3 border border-sky-100 bg-sky-50/10 hover:bg-sky-50/30 rounded-xl transition-all cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 bg-sky-55 text-sky-600 rounded-lg flex items-center justify-center font-bold">
+                          <Send className="w-4 h-4 text-sky-600" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-gray-900">Direct CS Telegram Desk</p>
+                          <p className="text-[10px] text-gray-400 font-semibold">Immediate 1-on-1 chatting support (@DEVVERTEX)</p>
+                        </div>
+                      </div>
+                      <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-sky-600 transition-colors" />
+                    </a>
 
                     {adminApprovalSettings.officialWhatsAppGroup && (
                       <a 
@@ -2772,7 +2761,7 @@ export default function App() {
                     )}
 
                     <a 
-                      href="https://t.me/lafarge_investment_hub" 
+                      href="https://t.me/+lXKtQC1GNbsxMzY0" 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="flex items-center justify-between p-3 border border-sky-100 bg-sky-50/10 hover:bg-sky-50/30 rounded-xl transition-all cursor-pointer group"
@@ -2784,6 +2773,24 @@ export default function App() {
                         <div>
                           <p className="text-xs font-bold text-gray-900">Official Telegram Group</p>
                           <p className="text-[10px] text-gray-400 font-semibold">Join thousands of active shareholders</p>
+                        </div>
+                      </div>
+                      <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-sky-600 transition-colors" />
+                    </a>
+
+                    <a 
+                      href="https://t.me/+kXjTOqAGZK1kYWJk" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between p-3 border border-sky-100 bg-sky-50/10 hover:bg-sky-50/30 rounded-xl transition-all cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 bg-sky-600 rounded-lg text-white flex items-center justify-center">
+                          <Send className="w-4 h-4 text-sky-100" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-gray-900">Official Telegram Channel</p>
+                          <p className="text-[10px] text-gray-400 font-semibold">Get latest announcements & updates live</p>
                         </div>
                       </div>
                       <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-sky-600 transition-colors" />
