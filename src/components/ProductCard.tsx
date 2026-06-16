@@ -198,17 +198,17 @@ export default function ProductCard({
             <div className="flex-1 overflow-y-auto min-h-0 pb-8">
               {isSuccess ? (
                 <div className="p-6 text-center space-y-4">
-                  <div className="w-12 h-12 bg-amber-50 border border-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto animate-pulse">
-                    <Clock className="w-6 h-6" />
+                  <div className="w-12 h-12 bg-green-50 border border-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
+                    <ShieldCheck className="w-6 h-6 text-green-650 animate-pulse" />
                   </div>
                   <div className="space-y-1">
-                    <h4 className="text-lg font-bold text-gray-900 font-display">Awaiting CEO Approval</h4>
+                    <h4 className="text-lg font-bold text-gray-900 font-display">Acquisition Completed</h4>
                     <p className="text-xs text-gray-500 leading-normal max-w-sm mx-auto">
-                      Your share option placement of <strong className="text-gray-900">{formatNGN(parseFloat(amount || '0'))}</strong> in {product.name} is now pending corporate underwrite authorization.
+                      Your share option placement of <strong className="text-gray-900">{formatNGN(parseFloat(amount || '0'))}</strong> in {product.name} has been processed successfully.
                     </p>
-                    <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 mt-3 text-[11px] text-amber-800 leading-normal text-left font-sans space-y-0.5">
-                      <p className="font-extrabold text-amber-905">&#9679; Executive Board Notice:</p>
-                      <p>This transaction has been securely logged. The supervisor CEO must review and approve this on their Admin Portal before it starts generating active yields.</p>
+                    <div className="bg-green-50 border border-green-100 rounded-lg p-3 mt-3 text-[11px] text-green-800 leading-normal text-left font-sans space-y-0.5">
+                      <p className="font-extrabold text-green-905">&#9679; Active Option Placement:</p>
+                      <p>Your capital has been successfully deployed. This option position is now <strong>active</strong> and has begun generating high-performance interest yields credited to your ledger dashboard daily.</p>
                     </div>
                   </div>
                   <button

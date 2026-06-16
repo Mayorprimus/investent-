@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Gift, Copy, Check, Sparkles, X, Share2, Award, Coins } from 'lucide-react';
+import { Gift, Copy, Check, Sparkles, X, Share2, Award, Coins, Send } from 'lucide-react';
 import { UserWallet } from '../types';
 
 interface PromoReferralModalProps {
@@ -116,6 +116,39 @@ export default function PromoReferralModal({ isOpen, onClose, wallet, adminAppro
                   Every user you invite credits your balance with <strong className="text-green-800">₦500.00</strong> setup bonus. 
                   Plus, unlock up to <strong className="text-emerald-700">5 levels of daily network commission</strong> starting from 0.1% (Level 1) up to 0.5% (Level 5) as your referral footprint expands!
                 </p>
+              </div>
+
+              {/* Telegram Community Notice */}
+              <div className="p-3 bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-100 rounded-xl text-left">
+                <div className="flex gap-2.5 items-start text-xs font-bold text-sky-950">
+                  <div className="w-8 h-8 rounded-lg bg-sky-500 text-white flex items-center justify-center shrink-0">
+                    <Send className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="space-y-1 w-full">
+                    <span className="text-gray-900 font-extrabold text-[12px]">Join Official Telegram Community</span>
+                    <p className="text-[10.5px] text-gray-500 font-semibold leading-relaxed">
+                      Make sure to join our active Telegram groups and channel for daily announcements, dividend payout confirmations, and fast support:
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2 pt-1 font-sans">
+                      <a 
+                        href="https://t.me/+kXjTOqAGZK1kYWJk"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 px-2 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-[9px] rounded-lg tracking-wider transition-colors inline-block text-center shadow-xs"
+                      >
+                        📬 JOIN TELEGRAM CHANNEL
+                      </a>
+                      <a 
+                        href="https://t.me/+lXKtQC1GNbsxMzY0"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 px-2 py-1.5 border border-sky-300 bg-white hover:bg-sky-50 text-sky-700 font-extrabold text-[9px] rounded-lg tracking-wider transition-colors inline-block text-center shadow-xs"
+                      >
+                        💬 TELEGRAM GROUP
+                      </a>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Payment Account Notice Indicator */}

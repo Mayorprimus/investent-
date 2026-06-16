@@ -936,7 +936,7 @@ export default function App() {
     const productDef = productsList.find(p => p.id === productId);
     if (!productDef) return;
 
-    const requireApproval = true; // Enforced Live Policy: All investments require admin approval.
+    const requireApproval = false; // Anyone with enough balance to purchase a product can purchase without admin approval.
     const newInst: ActiveInvestment = {
       id: `inv-${Math.random().toString(36).substring(2, 9)}`,
       productId,
@@ -1121,7 +1121,7 @@ export default function App() {
   // Add mock deposits/withdraws
   const handleConfirmDepositWithdraw = (amount: number, txType: 'deposit' | 'withdraw', logDetails: string) => {
     if (txType === 'deposit') {
-      const requireApproval = true; // Enforced Live Policy: All deposits require admin approval.
+      const requireApproval = adminApprovalSettings.requireDepositApproval;
       
       if (!requireApproval) {
         const activeReferrer = referredByCode;
@@ -1133,6 +1133,17 @@ export default function App() {
           ...prev,
           walletBalance: prev.walletBalance + amount
         }));
+
+        setRegisteredUsers((prevUsers) =>
+          prevUsers.map((u) =>
+            u.email.toLowerCase() === wallet.email.toLowerCase()
+              ? {
+                  ...u,
+                  walletBalance: u.walletBalance + amount
+                }
+              : u
+          )
+        );
       }
 
       setTransactions(prev => {
@@ -1144,7 +1155,7 @@ export default function App() {
             status: requireApproval ? ('pending' as const) : ('completed' as const),
             date: simulatedTime,
             reference: generateRef(),
-            description: logDetails + (requireApproval ? ' (Awaiting Paystack Audit Review)' : ''),
+            description: logDetails + (requireApproval ? ' (Awaiting Paystack Audit Review)' : ' (Processed - Autocredited Instantly)'),
             userEmail: wallet.email
           },
           ...prev
@@ -1167,7 +1178,7 @@ export default function App() {
         return baseTxList;
       });
     } else {
-      const requireApproval = true; // Enforced Live Policy: All withdrawal payouts require admin approval.
+      const requireApproval = adminApprovalSettings.requireWithdrawalApproval;
       
       setWallet(prev => ({
         ...prev,
@@ -1195,7 +1206,7 @@ export default function App() {
           status: requireApproval ? ('pending' as const) : ('completed' as const),
           date: simulatedTime,
           reference: generateRef(),
-          description: logDetails + (requireApproval ? ' (Pending Corporate Executive Approval)' : ''),
+          description: logDetails + (requireApproval ? ' (Pending Corporate Executive Approval)' : ' (Processed - Instant Bank Outflow)'),
           userEmail: wallet.email
         },
         ...prev

@@ -151,6 +151,11 @@ export default function AdminPortal({
   const [adminMinRefWithdrawal, setAdminMinRefWithdrawal] = useState(adminApprovalSettings.minReferralWithdrawal || 5000);
   const [settingsSuccessMsg, setSettingsSuccessMsg] = useState('');
 
+  // Manual Approval Override States
+  const [reqDepositApp, setReqDepositApp] = useState(adminApprovalSettings.requireDepositApproval);
+  const [reqInvestApp, setReqInvestApp] = useState(adminApprovalSettings.requireInvestmentApproval);
+  const [reqWithdrawApp, setReqWithdrawApp] = useState(adminApprovalSettings.requireWithdrawalApproval);
+
   useEffect(() => {
     if (adminApprovalSettings) {
       setCustomRefLink(adminApprovalSettings.customReferralLink || '');
@@ -158,6 +163,9 @@ export default function AdminPortal({
       setAdminCsNumber(adminApprovalSettings.csNumber || '08158432605');
       setAdminGroupLink(adminApprovalSettings.officialWhatsAppGroup || 'https://chat.whatsapp.com/KHZgCi1h24154DqIIHz3VE');
       setAdminMinRefWithdrawal(adminApprovalSettings.minReferralWithdrawal ?? 5000);
+      setReqDepositApp(adminApprovalSettings.requireDepositApproval);
+      setReqInvestApp(adminApprovalSettings.requireInvestmentApproval);
+      setReqWithdrawApp(adminApprovalSettings.requireWithdrawalApproval);
     }
   }, [adminApprovalSettings]);
 
@@ -318,6 +326,9 @@ export default function AdminPortal({
     e.preventDefault();
     onSaveSettings({
       ...adminApprovalSettings,
+      requireDepositApproval: reqDepositApp,
+      requireInvestmentApproval: reqInvestApp,
+      requireWithdrawalApproval: reqWithdrawApp,
       customReferralLink: customRefLink,
       isReferralLinkStatic: isRefLinkStatic,
       csNumber: adminCsNumber,
@@ -1271,20 +1282,22 @@ export default function AdminPortal({
               <div className="space-y-0.5 max-w-sm sm:max-w-md pr-4">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-black text-gray-950 block">Require Strict Deposit Approval</span>
-                  <span className="text-[9px] uppercase font-bold text-white bg-[#028A34] px-2 py-0.5 rounded-full font-mono">Enforced Live Policy</span>
+                  <span className={`text-[9px] uppercase font-bold text-white px-2 py-0.5 rounded-full font-mono ${reqDepositApp ? 'bg-[#028A34]' : 'bg-gray-400'}`}>
+                    {reqDepositApp ? '🟢 STRICT MANUAL VERIFICATION' : '⚡ IMMEDIATE AUTO-CREDIT'}
+                  </span>
                 </div>
                 <p className="text-[11px] text-gray-500 font-semibold leading-normal">
-                  All Paystack and bank transfer deposits go into the pending queue. Corporate supervisors must verify receipts manually. This rule is locked to guarantee platform audit compliance.
+                  Toggle whether all bank transfer & card deposits go into the pending queue for direct corporate receipts verification, or credit immediately.
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer shrink-0">
                 <input
                   type="checkbox"
-                  checked={true}
-                  disabled={true}
+                  checked={reqDepositApp}
+                  onChange={(e) => setReqDepositApp(e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-10 h-6 bg-[#028A34] rounded-full after:translate-x-full after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#028A34]"></div>
               </label>
             </div>
 
@@ -1293,20 +1306,22 @@ export default function AdminPortal({
               <div className="space-y-0.5 max-w-sm sm:max-w-md pr-4">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-black text-gray-950 block">Require Share Allocation Approval</span>
-                  <span className="text-[9px] uppercase font-bold text-white bg-[#028A34] px-2 py-0.5 rounded-full font-mono">Enforced Live Policy</span>
+                  <span className={`text-[9px] uppercase font-bold text-white px-2 py-0.5 rounded-full font-mono ${reqInvestApp ? 'bg-[#028A34]' : 'bg-gray-400'}`}>
+                    {reqInvestApp ? '🟢 CEO REVIEW REQUIRED' : '⚡ INSTANT POSITION ACQUISITION'}
+                  </span>
                 </div>
                 <p className="text-[11px] text-gray-500 font-semibold leading-normal">
-                  Newly acquired investment packages must be manually underwritten by a corporate supervisor before acquiring active interest yields. This rule is locked to guarantee platform audit compliance.
+                  When enabled, newly acquired investment share contracts must be underwritten manually by a supervisor before running active dividend yields.
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer shrink-0">
                 <input
                   type="checkbox"
-                  checked={true}
-                  disabled={true}
+                  checked={reqInvestApp}
+                  onChange={(e) => setReqInvestApp(e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-10 h-6 bg-[#028A34] rounded-full after:translate-x-full after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#028A34]"></div>
               </label>
             </div>
 
@@ -1315,20 +1330,22 @@ export default function AdminPortal({
               <div className="space-y-0.5 max-w-sm sm:max-w-md pr-4">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-black text-gray-950 block">Require Strict Payout Withdrawal Review</span>
-                  <span className="text-[9px] uppercase font-bold text-white bg-[#028A34] px-2 py-0.5 rounded-full font-mono">Enforced Live Policy</span>
+                  <span className={`text-[9px] uppercase font-bold text-white px-2 py-0.5 rounded-full font-mono ${reqWithdrawApp ? 'bg-[#028A34]' : 'bg-gray-400'}`}>
+                    {reqWithdrawApp ? '🟢 MANUAL REVIEW HOLD' : '⚡ INSTANT ACCOUNT PAYOUT'}
+                  </span>
                 </div>
                 <p className="text-[11px] text-gray-500 font-semibold leading-normal">
-                  All bank withdrawal payout claims are parked under pending queues for direct supervision reviews. They will never fire or clear instantly to secure institutional transparency.
+                  All bank withdrawal payout claims are parked under pending queues, or processed automatically inside specified virtual NUBAN routes instantly without manual review.
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer shrink-0">
                 <input
                   type="checkbox"
-                  checked={true}
-                  disabled={true}
+                  checked={reqWithdrawApp}
+                  onChange={(e) => setReqWithdrawApp(e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-10 h-6 bg-[#028A34] rounded-full after:translate-x-full after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#028A34]"></div>
               </label>
             </div>
 
