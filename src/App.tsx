@@ -47,6 +47,56 @@ import SplashScreen from './components/SplashScreen';
 import PromoReferralModal from './components/PromoReferralModal';
 import { motion } from 'motion/react';
 
+function areWalletsEqual(w1: UserWallet | undefined, w2: UserWallet | undefined): boolean {
+  if (!w1 && !w2) return true;
+  if (!w1 || !w2) return false;
+  
+  const keysToCompare: (keyof UserWallet)[] = [
+    'walletBalance',
+    'investedBalance',
+    'withdrawnBalance',
+    'earnedBalance',
+    'accountNumber',
+    'fullName',
+    'email',
+    'referralCode',
+    'referralsCount',
+    'referralEarnings',
+    'isFlagged',
+    'requireReferralToWithdraw',
+    'requireReferralDepositToWithdraw',
+    'hasClaimedBonus',
+    'password',
+    'referredBy',
+    'autoInvest',
+    'approvedLevel',
+    'pendingLevelUpgrade'
+  ];
+  
+  for (const key of keysToCompare) {
+    const val1 = w1[key];
+    const val2 = w2[key];
+    
+    // Normalize undefined / null / false for optional booleans to avoid mismatch
+    if (typeof val1 === 'boolean' || typeof val2 === 'boolean') {
+      if (!!val1 !== !!val2) return false;
+      continue;
+    }
+    
+    // Handle potential NaN values
+    if (typeof val1 === 'number' && typeof val2 === 'number') {
+      if (isNaN(val1) && isNaN(val2)) continue;
+      if (Math.abs(val1 - val2) > 0.0001) return false;
+      continue;
+    }
+    
+    // Normal comparison for strings or other types
+    if ((val1 ?? '') !== (val2 ?? '')) return false;
+  }
+  
+  return true;
+}
+
 export default function App() {
   const [isSplashActive, setIsSplashActive] = useState(true);
   const [showPromoModal, setShowPromoModal] = useState(false);
@@ -65,7 +115,8 @@ export default function App() {
     isReferralLinkStatic: false,
     csNumber: '08158432605',
     officialWhatsAppGroup: 'https://chat.whatsapp.com/KHZgCi1h24154DqIIHz3VE',
-    minReferralWithdrawal: 5000
+    minReferralWithdrawal: 5000,
+    allowAnytimeWithdrawal: false
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
@@ -521,6 +572,10 @@ export default function App() {
       try {
         const res = await fetch('/api/sync');
         if (res.ok && isMounted) {
+          const contentType = res.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Response is not JSON (received HTML/text instead), server may be restarting');
+          }
           const data = await res.json();
           if (data && (data.version > localVersion.current || !isInitializedFromServer.current)) {
             // New changes exist on server database. Lock synchronizer feedback and update state.
@@ -543,7 +598,8 @@ export default function App() {
                 isReferralLinkStatic: data.adminApprovalSettings.isReferralLinkStatic ?? false,
                 csNumber: data.adminApprovalSettings.csNumber ?? '08158432605',
                 officialWhatsAppGroup: data.adminApprovalSettings.officialWhatsAppGroup ?? 'https://chat.whatsapp.com/KHZgCi1h24154DqIIHz3VE',
-                minReferralWithdrawal: data.adminApprovalSettings.minReferralWithdrawal ?? 5000
+                minReferralWithdrawal: data.adminApprovalSettings.minReferralWithdrawal ?? 5000,
+                allowAnytimeWithdrawal: data.adminApprovalSettings.allowAnytimeWithdrawal ?? false
               });
             }
 
@@ -557,7 +613,15 @@ export default function App() {
       } catch (e) {
         // Gracefully warning-log transient network/restart errors, only error on true logical bugs
         const errorMsg = e instanceof Error ? e.message : String(e);
-        if (errorMsg.includes('Failed to fetch') || errorMsg.includes('fetch') || errorMsg.includes('network') || errorMsg.includes('Load failed')) {
+        if (
+          errorMsg.includes('Failed to fetch') ||
+          errorMsg.includes('fetch') ||
+          errorMsg.includes('network') ||
+          errorMsg.includes('Load failed') ||
+          errorMsg.includes('not JSON') ||
+          errorMsg.includes('Unexpected token') ||
+          errorMsg.includes('JSON')
+        ) {
           console.warn("Sync server is temporarily offline or restarting, retrying soon...");
         } else {
           console.error("Online poll error:", e);
@@ -638,9 +702,7 @@ export default function App() {
     setRegisteredUsers((prevUsers) => {
       const match = prevUsers.find((u) => u.email.toLowerCase() === wallet.email.toLowerCase());
       if (match) {
-        const hasDiff = Object.keys(wallet).some(
-          (key) => (wallet as any)[key] !== (match as any)[key]
-        );
+        const hasDiff = !areWalletsEqual(wallet, match);
         if (hasDiff) {
           return prevUsers.map((u) =>
             u.email.toLowerCase() === wallet.email.toLowerCase() ? { ...wallet } : u
@@ -655,9 +717,7 @@ export default function App() {
     if (!wallet || !wallet.email || wallet.email.toLowerCase() === 'admin1234@gmail.com') return;
     const match = registeredUsers.find((u) => u.email.toLowerCase() === wallet.email.toLowerCase());
     if (match) {
-      const hasDiff = Object.keys(match).some(
-        (key) => (wallet as any)[key] !== (match as any)[key]
-      );
+      const hasDiff = !areWalletsEqual(wallet, match);
       if (hasDiff) {
         setWallet(match);
       }
@@ -675,262 +735,153 @@ export default function App() {
   );
   const userActiveCount = userActiveInvestments.filter(i => i.status === 'active').length;
 
-  // Global Time Machine Engine updating state dynamically!
-  const handleAdvanceTime = (msToAdd: number) => {
-    setSimulatedTime((prevTime) => {
-      const newTime = prevTime + msToAdd;
+  // Real-time Virtual Simulate Date Clock ticking every second
+  useEffect(() => {
+    const clockTimer = setInterval(() => {
+      setSimulatedTime((prev) => prev + 1000);
+    }, 1000);
+    return () => clearInterval(clockTimer);
+  }, []);
 
-      // Scan and mutate maturing/accumulating investments
-      setActiveInvestments((prevInvestments) => {
-        const userEarnings: Record<string, number> = {};
-        const referrerCommissions: Record<string, number> = {};
-        let newTransactions: Transaction[] = [];
+  // Unified Automatic dividend accrual processing under simulation/real-time
+  useEffect(() => {
+    if (!isInitializedFromServer.current || activeInvestments.length === 0) return;
 
-        // Pre-build referee to referrer map based on current registered users
-        const refereeReferrerMap: Record<string, { referrerEmail: string, refereeName: string }> = {};
-        registeredUsers.forEach((usr) => {
-          if (usr.referredBy) {
-            const code = usr.referredBy.trim().toLowerCase();
-            const referrer = registeredUsers.find(
-              (r) => r.referralCode?.trim().toLowerCase() === code
-            );
-            if (referrer) {
-              refereeReferrerMap[usr.email.toLowerCase()] = {
-                referrerEmail: referrer.email.toLowerCase(),
-                refereeName: usr.fullName
-              };
-            }
-          }
-        });
+    const stepMs = 24 * 60 * 60 * 1000;
+    let nextInvestments = [...activeInvestments];
+    let userUpdates: Record<string, { walletAdd: number; earnedAdd: number; investedSub: number }> = {};
+    let nextTransactions = [...transactions];
+    let hasChanges = false;
 
-        // Precompute multi-level referral counts for all registered users (needed for level unlock thresholds)
-        const userNetworkCounts: Record<string, { lv1: number; lv2: number; lv3: number; lv4: number; lv5: number }> = {};
-        registeredUsers.forEach((usr) => {
-          const emailLower = usr.email.toLowerCase();
-          const codeNormalized = (usr.referralCode || '').trim().toLowerCase();
-          if (!codeNormalized) {
-            userNetworkCounts[emailLower] = { lv1: 0, lv2: 0, lv3: 0, lv4: 0, lv5: 0 };
-            return;
-          }
-          
-          const lv1Users = registeredUsers.filter(u => u.referredBy?.trim().toLowerCase() === codeNormalized);
-          const lv2Users = registeredUsers.filter(u => {
-            if (!u.referredBy) return false;
-            const refByCode = u.referredBy.trim().toLowerCase();
-            return lv1Users.some(l1 => l1.referralCode.trim().toLowerCase() === refByCode);
-          });
-          const lv3Users = registeredUsers.filter(u => {
-            if (!u.referredBy) return false;
-            const refByCode = u.referredBy.trim().toLowerCase();
-            return lv2Users.some(l2 => l2.referralCode.trim().toLowerCase() === refByCode);
-          });
-          const lv4Users = registeredUsers.filter(u => {
-            if (!u.referredBy) return false;
-            const refByCode = u.referredBy.trim().toLowerCase();
-            return lv3Users.some(l3 => l3.referralCode.trim().toLowerCase() === refByCode);
-          });
-          const lv5Users = registeredUsers.filter(u => {
-            if (!u.referredBy) return false;
-            const refByCode = u.referredBy.trim().toLowerCase();
-            return lv4Users.some(l4 => l4.referralCode.trim().toLowerCase() === refByCode);
-          });
-          
-          userNetworkCounts[emailLower] = {
-            lv1: lv1Users.length,
-            lv2: lv2Users.length,
-            lv3: lv3Users.length,
-            lv4: lv4Users.length,
-            lv5: lv5Users.length
-          };
-        });
+    nextInvestments = nextInvestments.map((inv) => {
+      if (inv.status !== 'active') return inv;
 
-        const updatedList = prevInvestments.map((inv) => {
-          if (inv.status !== 'active') return inv;
+      const startDate = inv.startDate;
+      const termDays = inv.termDays || 30;
+      const rate = inv.rate || 0.26666666666666666;
+      const amountInvested = inv.amountInvested;
 
-          let workingInv = { ...inv };
-          const email = (workingInv.userEmail || 'jeremiahobazee11@gmail.com').toLowerCase();
-          if (!userEarnings[email]) {
-            userEarnings[email] = 0;
-          }
-          
-          const currentRate = workingInv.rate || 0.10;
-          const termDays = workingInv.termDays || Math.round(workingInv.expectedReturn / (workingInv.amountInvested * currentRate)) || 4;
-          
-          let refereeYieldThisJump = 0;
+      const elapsedMs = Math.max(0, simulatedTime - inv.lastAccrualTime);
+      const steps = Math.floor(elapsedMs / stepMs);
 
-          // Calculate old elapsed days to find the change during this jump
-          const oldElapsedMs = prevTime - inv.startDate;
-          const oldElapsedDays = Math.floor(Math.max(0, oldElapsedMs) / (24 * 60 * 60 * 1000));
-          const oldCappedDays = Math.min(termDays, Math.max(0, oldElapsedDays));
-          const oldAccrued = inv.amountInvested * currentRate * oldCappedDays;
+      if (steps < 1) return inv;
 
-          while (newTime >= workingInv.endDate) {
-            const cycleProfit = workingInv.amountInvested * currentRate * termDays;
-            userEarnings[email] += cycleProfit;
-            refereeYieldThisJump += cycleProfit;
+      const daysAlreadyCredited = Math.round((inv.lastAccrualTime - startDate) / stepMs);
+      const maxDaysToCredit = Math.max(0, termDays - daysAlreadyCredited);
+      const actualStepsToAccrue = Math.min(steps, maxDaysToCredit);
 
-            if (workingInv.isCompounding) {
-              // Roll over BOTH principal and profit for next term cycle
-              const newAmountCompounded = workingInv.amountInvested * (1 + (currentRate * termDays));
-              const prevEndDate = workingInv.endDate;
+      if (actualStepsToAccrue < 1) return inv;
 
-              newTransactions.push({
-                id: `tx-comp-payout-${Math.random().toString(36).substring(2, 9)}`,
-                type: 'payout',
-                amount: cycleProfit,
-                status: 'completed',
-                date: prevEndDate,
-                reference: generateRef(),
-                description: `Roll dividend release: ${workingInv.productName}`,
-                userEmail: email
-              });
+      hasChanges = true;
+      const dailyYield = Math.round(amountInvested * rate);
+      const totalYieldAmount = dailyYield * actualStepsToAccrue;
 
-              newTransactions.push({
-                id: `tx-comp-reinvest-${Math.random().toString(36).substring(2, 9)}`,
-                type: 'invest',
-                amount: workingInv.amountInvested,
-                status: 'completed',
-                date: prevEndDate,
-                reference: generateRef(),
-                description: `Rollover compound reinvest: ${workingInv.productName}`,
-                userEmail: email
-              });
+      let nextLastAccrualTime = inv.lastAccrualTime + actualStepsToAccrue * stepMs;
+      let nextStatus: ActiveInvestment['status'] = inv.status;
+      let totalAccrued = (inv.totalAccrued || 0) + totalYieldAmount;
 
-              workingInv.startDate = prevEndDate;
-              workingInv.endDate = prevEndDate + (termDays * 24 * 60 * 60 * 1000); // dynamic days
-              workingInv.amountInvested = newAmountCompounded;
-              workingInv.expectedReturn = newAmountCompounded * currentRate * termDays;
-              workingInv.totalAccrued = 0; // reset accrued so far
-            } else {
-              // Stop compounding. Set to matured, capital goes wait for manual payout claim
-              workingInv.status = 'matured';
-              workingInv.totalAccrued = cycleProfit; // fully accrued 40%-150%
-              break;
-            }
-          }
+      const emailKey = (inv.userEmail || '').toLowerCase();
+      if (!userUpdates[emailKey]) {
+        userUpdates[emailKey] = { walletAdd: 0, earnedAdd: 0, investedSub: 0 };
+      }
+      userUpdates[emailKey].walletAdd += totalYieldAmount;
+      userUpdates[emailKey].earnedAdd += totalYieldAmount;
 
-          // Update active partial accruals dynamically if still active
-          if (workingInv.status === 'active') {
-            const elapsedMs = newTime - workingInv.startDate;
-            const elapsedDays = Math.floor(elapsedMs / (24 * 60 * 60 * 1000));
-            const cappedDays = Math.min(termDays, Math.max(0, elapsedDays));
-            workingInv.totalAccrued = workingInv.amountInvested * currentRate * cappedDays;
-
-            // Compute part yield accrued during the non-rollover portion of this jump
-            if (workingInv.startDate === inv.startDate) {
-              const diff = Math.max(0, workingInv.totalAccrued - oldAccrued);
-              refereeYieldThisJump += diff;
-            } else {
-              refereeYieldThisJump += workingInv.totalAccrued;
-            }
-          }
-
-          // Distribute 5-Level Daily Referral Bonus Commission to upstream referrers!
-          if (refereeYieldThisJump > 0) {
-            let currentSponsorEmail = email;
-            
-            // Loop up to 5 levels of upstream sponsors
-            for (let level = 1; level <= 5; level++) {
-              const currentSponsorUsr = registeredUsers.find(
-                (u) => u.email.toLowerCase() === currentSponsorEmail.toLowerCase()
-              );
-              if (!currentSponsorUsr || !currentSponsorUsr.referredBy) break;
-
-              const code = currentSponsorUsr.referredBy.trim().toLowerCase();
-              const referrer = registeredUsers.find(
-                (r) => r.referralCode?.trim().toLowerCase() === code
-              );
-              if (!referrer) break;
-
-              const referrerEmailLower = referrer.email.toLowerCase();
-              const counts = userNetworkCounts[referrerEmailLower] || { lv1: 0, lv2: 0, lv3: 0, lv4: 0, lv5: 0 };
-
-              // Check commission rates and referral requirements per level:
-              // Level 1: 0.1% (Unlocked if level 1 refs >= 5)
-              // Level 2: 0.2% (Unlocked if level 2 refs >= 10)
-              // Level 3: 0.3% (Unlocked if level 3 refs >= 15)
-              // Level 4: 0.4% (Unlocked if level 4 refs >= 20)
-              // Level 5: 0.5% (Unlocked if level 5 refs >= 25)
-              let commRate = 0;
-              if (level === 1 && counts.lv1 >= 5) {
-                commRate = 0.001;
-              } else if (level === 2 && counts.lv2 >= 10) {
-                commRate = 0.002;
-              } else if (level === 3 && counts.lv3 >= 15) {
-                commRate = 0.003;
-              } else if (level === 4 && counts.lv4 >= 20) {
-                commRate = 0.004;
-              } else if (level === 5 && counts.lv5 >= 25) {
-                commRate = 0.005;
-              }
-
-              if (commRate > 0) {
-                const commAmount = refereeYieldThisJump * commRate;
-                if (commAmount > 0.001) {
-                  referrerCommissions[referrerEmailLower] = (referrerCommissions[referrerEmailLower] || 0) + commAmount;
-
-                  newTransactions.push({
-                    id: `tx-ref-level-${level}-${Math.random().toString(36).substring(2, 9)}`,
-                    type: 'payout',
-                    amount: commAmount,
-                    status: 'completed',
-                    date: newTime,
-                    reference: generateRef(),
-                    description: `Level ${level} Commission (${(commRate * 100).toFixed(1)}%): ₦${commAmount.toFixed(2)} from level-${level} referee ${workingInv.userEmail}'s options yield!`,
-                    userEmail: referrerEmailLower
-                  });
-                }
-              }
-
-              // Advance sponsor chain to next upstream tier
-              currentSponsorEmail = referrerEmailLower;
-            }
-          }
-
-          return workingInv;
-        });
-
-        // Update each registered user's balance based on earned yields and active investments
-        setRegisteredUsers((prevUsers) =>
-          prevUsers.map((u) => {
-            const email = u.email.toLowerCase();
-            const earnedAdd = userEarnings[email] || 0;
-            const commAdd = referrerCommissions[email] || 0;
-            
-            const userActiveInvests = updatedList.filter(
-              (i) => i.status === 'active' && (i.userEmail || '').toLowerCase() === email
-            );
-            const deltaActive = userActiveInvests.reduce((sum, i) => sum + i.amountInvested, 0);
-
-            if (earnedAdd > 0 || commAdd > 0 || u.investedBalance !== deltaActive) {
-              const nextU = {
-                ...u,
-                walletBalance: u.walletBalance + commAdd,
-                earnedBalance: u.earnedBalance + earnedAdd + commAdd,
-                referralEarnings: u.referralEarnings + commAdd,
-                investedBalance: deltaActive
-              };
-
-              // Explicitly sync current logged-in user's wallet
-              if (wallet && wallet.email.toLowerCase() === email) {
-                setWallet(nextU);
-              }
-
-              return nextU;
-            }
-            return u;
-          })
-        );
-
-        if (newTransactions.length > 0) {
-          setTransactions((prevTx) => [...newTransactions, ...prevTx]);
-        }
-
-        return updatedList;
+      nextTransactions.unshift({
+        id: `tx-yield-${Math.random().toString(36).substring(2, 9)}`,
+        type: 'payout',
+        amount: totalYieldAmount,
+        status: 'completed',
+        date: nextLastAccrualTime,
+        reference: `DIV-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+        description: `Daily dividend payout (+₦${totalYieldAmount.toLocaleString()}) dropped from ${inv.productName}`,
+        userEmail: inv.userEmail,
       });
 
-      return newTime;
+      const totalDaysCredited = daysAlreadyCredited + actualStepsToAccrue;
+      if (totalDaysCredited >= termDays) {
+        if (inv.isCompounding !== false) {
+          // Auto restart cycle
+          nextTransactions.unshift({
+            id: `tx-roll-${Math.random().toString(36).substring(2, 9)}`,
+            type: 'invest',
+            amount: amountInvested,
+            status: 'completed',
+            date: nextLastAccrualTime,
+            reference: `ROLL-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+            description: `Auto-Rollover Reinvestment: Cleanly restarted new ${termDays}-day cycle for ${inv.productName}`,
+            userEmail: inv.userEmail,
+          });
+
+          return {
+            ...inv,
+            startDate: nextLastAccrualTime,
+            endDate: nextLastAccrualTime + termDays * stepMs,
+            lastAccrualTime: nextLastAccrualTime,
+            totalAccrued: 0,
+            status: 'active',
+          };
+        } else {
+          // Return Capital Principal
+          nextStatus = 'withdrawn';
+          userUpdates[emailKey].walletAdd += amountInvested;
+          userUpdates[emailKey].investedSub += amountInvested;
+
+          nextTransactions.unshift({
+            id: `tx-refund-${Math.random().toString(36).substring(2, 9)}`,
+            type: 'refund',
+            amount: amountInvested,
+            status: 'completed',
+            date: nextLastAccrualTime,
+            reference: `REF-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+            description: `Capital principal unlocked (+₦${amountInvested.toLocaleString()}) from fully matured ${inv.productName}`,
+            userEmail: inv.userEmail,
+          });
+        }
+      }
+
+      return {
+        ...inv,
+        lastAccrualTime: nextLastAccrualTime,
+        totalAccrued,
+        status: nextStatus,
+      };
     });
+
+    if (hasChanges) {
+      setRegisteredUsers((prevUsers) => {
+        const nextUsers = prevUsers.map((u) => {
+          const emailKey = u.email.toLowerCase();
+          const updatesForUser = userUpdates[emailKey];
+          if (updatesForUser) {
+            return {
+              ...u,
+              walletBalance: u.walletBalance + updatesForUser.walletAdd,
+              earnedBalance: u.earnedBalance + updatesForUser.earnedAdd,
+              investedBalance: Math.max(0, u.investedBalance - updatesForUser.investedSub),
+            };
+          }
+          return u;
+        });
+
+        // Sync local wallet
+        if (wallet) {
+          const matched = nextUsers.find((u) => u.email.toLowerCase() === wallet.email.toLowerCase());
+          if (matched) {
+            setWallet(matched);
+          }
+        }
+        return nextUsers;
+      });
+
+      setActiveInvestments(nextInvestments);
+      setTransactions(nextTransactions);
+    }
+  }, [simulatedTime]);
+
+  // Global Time Machine Engine updating state dynamically!
+  const handleAdvanceTime = (msToAdd: number) => {
+    setSimulatedTime((prevTime) => prevTime + msToAdd);
   };
 
   // Launch Lafarge share investment
@@ -1121,7 +1072,7 @@ export default function App() {
   };
 
   // Add mock deposits/withdraws
-  const handleConfirmDepositWithdraw = (amount: number, txType: 'deposit' | 'withdraw', logDetails: string) => {
+  const handleConfirmDepositWithdraw = (amount: number, txType: 'deposit' | 'withdraw', logDetails: string, source: 'wallet' | 'referral' = 'wallet') => {
     if (txType === 'deposit') {
       const requireApproval = adminApprovalSettings.requireDepositApproval;
       
@@ -1181,10 +1132,12 @@ export default function App() {
       });
     } else {
       const requireApproval = adminApprovalSettings.requireWithdrawalApproval;
+      const isReferral = source === 'referral';
       
       setWallet(prev => ({
         ...prev,
-        walletBalance: prev.walletBalance - amount,
+        walletBalance: isReferral ? prev.walletBalance : prev.walletBalance - amount,
+        referralEarnings: isReferral ? Math.max(0, prev.referralEarnings - amount) : prev.referralEarnings,
         withdrawnBalance: requireApproval ? prev.withdrawnBalance : prev.withdrawnBalance + amount
       }));
 
@@ -1193,7 +1146,8 @@ export default function App() {
           u.email.toLowerCase() === wallet.email.toLowerCase()
             ? {
                 ...u,
-                walletBalance: u.walletBalance - amount,
+                walletBalance: isReferral ? u.walletBalance : u.walletBalance - amount,
+                referralEarnings: isReferral ? Math.max(0, (u.referralEarnings || 0) - amount) : (u.referralEarnings || 0),
                 withdrawnBalance: requireApproval ? u.withdrawnBalance : u.withdrawnBalance + amount
               }
             : u
@@ -3100,7 +3054,8 @@ export default function App() {
                 isReferralLinkStatic: !!settings.isReferralLinkStatic,
                 csNumber: settings.csNumber || '08158432605',
                 officialWhatsAppGroup: settings.officialWhatsAppGroup || 'https://chat.whatsapp.com/KHZgCi1h24154DqIIHz3VE',
-                minReferralWithdrawal: Number(settings.minReferralWithdrawal) || 5000
+                minReferralWithdrawal: Number(settings.minReferralWithdrawal) || 5000,
+                allowAnytimeWithdrawal: !!settings.allowAnytimeWithdrawal
               })}
               onApproveDeposit={handleApproveDeposit}
               onDeclineDeposit={handleDeclineDeposit}

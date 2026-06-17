@@ -54,6 +54,7 @@ interface AdminPortalProps {
     csNumber?: string;
     officialWhatsAppGroup?: string;
     minReferralWithdrawal?: number;
+    allowAnytimeWithdrawal?: boolean;
   };
   onSaveSettings: (settings: {
     requireDepositApproval: boolean;
@@ -64,6 +65,7 @@ interface AdminPortalProps {
     csNumber?: string;
     officialWhatsAppGroup?: string;
     minReferralWithdrawal?: number;
+    allowAnytimeWithdrawal?: boolean;
   }) => void;
   onApproveDeposit: (txId: string) => void;
   onDeclineDeposit: (txId: string) => void;
@@ -158,6 +160,7 @@ export default function AdminPortal({
   const [reqDepositApp, setReqDepositApp] = useState(adminApprovalSettings.requireDepositApproval);
   const [reqInvestApp, setReqInvestApp] = useState(adminApprovalSettings.requireInvestmentApproval);
   const [reqWithdrawApp, setReqWithdrawApp] = useState(adminApprovalSettings.requireWithdrawalApproval);
+  const [allowAnytimeWithdraw, setAllowAnytimeWithdraw] = useState(adminApprovalSettings.allowAnytimeWithdrawal || false);
 
   useEffect(() => {
     if (adminApprovalSettings) {
@@ -169,6 +172,7 @@ export default function AdminPortal({
       setReqDepositApp(adminApprovalSettings.requireDepositApproval);
       setReqInvestApp(adminApprovalSettings.requireInvestmentApproval);
       setReqWithdrawApp(adminApprovalSettings.requireWithdrawalApproval);
+      setAllowAnytimeWithdraw(adminApprovalSettings.allowAnytimeWithdrawal || false);
     }
   }, [adminApprovalSettings]);
 
@@ -337,7 +341,8 @@ export default function AdminPortal({
       isReferralLinkStatic: isRefLinkStatic,
       csNumber: adminCsNumber,
       officialWhatsAppGroup: adminGroupLink,
-      minReferralWithdrawal: Number(adminMinRefWithdrawal) || 5000
+      minReferralWithdrawal: Number(adminMinRefWithdrawal) || 5000,
+      allowAnytimeWithdrawal: allowAnytimeWithdraw
     });
     setSettingsSuccessMsg('Platform policy settings successfully saved and deployed live!');
     setTimeout(() => setSettingsSuccessMsg(''), 4000);
@@ -1512,6 +1517,30 @@ export default function AdminPortal({
                   type="checkbox"
                   checked={reqWithdrawApp}
                   onChange={(e) => setReqWithdrawApp(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#028A34]"></div>
+              </label>
+            </div>
+
+            {/* Setting 4: Enable 24/7 Global Unlimited Withdrawals */}
+            <div className="flex items-center justify-between p-4 border border-emerald-150 bg-emerald-50/20 rounded-2xl animate-fade-in">
+              <div className="space-y-0.5 max-w-sm sm:max-w-md pr-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-gray-950 block">Force Open Withdrawal Window (24/7 Bypass)</span>
+                  <span className={`text-[9px] uppercase font-bold text-white px-2 py-0.5 rounded-full font-mono ${allowAnytimeWithdraw ? 'bg-[#028A34]' : 'bg-gray-400'}`}>
+                    {allowAnytimeWithdraw ? '🟢 OPEN WIDE (24/7)' : '🔒 RESTRICTED (10AM-12PM)'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-500 font-semibold leading-normal">
+                  When enabled, shareholders can bypass the restricted simulated 10:00 AM - 12:00 PM time window, allowing them to submit payout claims at any hour of the day.
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={allowAnytimeWithdraw}
+                  onChange={(e) => setAllowAnytimeWithdraw(e.target.checked)}
                   className="sr-only peer"
                 />
                 <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#028A34]"></div>

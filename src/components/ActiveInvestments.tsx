@@ -223,8 +223,8 @@ export default function ActiveInvestments({
                       <ArrowUpRight className="w-4 h-4" />
                     </button>
                   ) : (
-                    <div className="text-[11px] text-amber-600 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 font-black flex items-center gap-1.5">
-                      <HelpCircle className="w-4 h-4 text-amber-500 shrink-0" /> Cumulative daily dividends locked in {termDays}-day package cycle. Withdraws available upon maturity.
+                    <div className="text-[11px] text-[#028A34] bg-green-50 border border-green-150 rounded-xl px-3 py-2 font-bold flex items-center gap-1.5 matches-daily-drop animate-fade-in">
+                      <CheckCircle className="w-4 h-4 text-[#028A34] shrink-0" /> Daily yields drop directly into your Liquid Cash & Cumulative Dividends balances every 24 hours.
                     </div>
                   )}
                 </div>

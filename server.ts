@@ -203,7 +203,9 @@ async function startServer() {
       customReferralLink: '',
       isReferralLinkStatic: false,
       csNumber: '08158432605',
-      officialWhatsAppGroup: 'https://chat.whatsapp.com/KHZgCi1h24154DqIIHz3VE'
+      officialWhatsAppGroup: 'https://chat.whatsapp.com/KHZgCi1h24154DqIIHz3VE',
+      minReferralWithdrawal: 5000,
+      allowAnytimeWithdrawal: false
     }
   };
 
@@ -227,7 +229,9 @@ async function startServer() {
           customReferralLink: data.adminApprovalSettings?.customReferralLink ?? '',
           isReferralLinkStatic: data.adminApprovalSettings?.isReferralLinkStatic ?? false,
           csNumber: data.adminApprovalSettings?.csNumber ?? '08158432605',
-          officialWhatsAppGroup: data.adminApprovalSettings?.officialWhatsAppGroup ?? 'https://chat.whatsapp.com/KHZgCi1h24154DqIIHz3VE'
+          officialWhatsAppGroup: data.adminApprovalSettings?.officialWhatsAppGroup ?? 'https://chat.whatsapp.com/KHZgCi1h24154DqIIHz3VE',
+          minReferralWithdrawal: data.adminApprovalSettings?.minReferralWithdrawal ?? 5000,
+          allowAnytimeWithdrawal: data.adminApprovalSettings?.allowAnytimeWithdrawal ?? false
         }
       };
 

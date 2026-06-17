@@ -8,7 +8,7 @@ interface DepositWithdrawModalProps {
   onClose: () => void;
   type: 'deposit' | 'withdraw';
   walletBalance: number;
-  onConfirm: (amount: number, txType: 'deposit' | 'withdraw', details: string) => void;
+  onConfirm: (amount: number, txType: 'deposit' | 'withdraw', details: string, source: 'wallet' | 'referral') => void;
   simulatedTime: number;
   wallet: UserWallet;
   depositAccounts: DepositAccount[];
@@ -16,6 +16,7 @@ interface DepositWithdrawModalProps {
   transactions?: Transaction[];
   adminApprovalSettings?: {
     minReferralWithdrawal?: number;
+    allowAnytimeWithdrawal?: boolean;
     [key: string]: any;
   };
 }
@@ -36,6 +37,7 @@ export default function DepositWithdrawModal({
   const minRefWithdrawal = adminApprovalSettings?.minReferralWithdrawal || 5000;
   const userHasReferrals = !!((wallet.referralsCount && wallet.referralsCount > 0) || (wallet.referralEarnings && wallet.referralEarnings > 0));
 
+  const [withdrawSource, setWithdrawSource] = useState<'wallet' | 'referral'>('wallet');
   const [amount, setAmount] = useState<string>('');
   const [method, setMethod] = useState<'bank' | 'card' | 'crypto'>('bank');
   
@@ -113,25 +115,21 @@ export default function DepositWithdrawModal({
 
       const simulatedDate = new Date(simulatedTime);
       const currentHour = simulatedDate.getHours();
+      const allowByAdminOrRef = !!(adminApprovalSettings?.allowAnytimeWithdrawal || withdrawSource === 'referral');
       
-      if (currentHour < 10 || currentHour >= 12) {
-        const timeString = simulatedDate.toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
-          minute: '2-digit',
-          second: '2-digit'
-        });
-        setErrorMessage(`Withdrawal processing window is strictly limited from 10:00 AM to 12:00 PM daily. The current simulated platform time is ${timeString}. Please use the Virtual Time Machine on the Dashboard to leap forward to the 10:00 AM withdrawal hours!`);
-        return false;
-      }
+      // Let users submit withdrawals anytime, but inform them on the transaction status
+      const isOutsideProcessingWindow = !allowByAdminOrRef && (currentHour < 10 || currentHour >= 12);
 
-      if (amtNum > walletBalance) {
-        setErrorMessage(`Insufficient funds. Your local balance is ${formatNGN(walletBalance)}.`);
+      const targetBalance = withdrawSource === 'referral' ? (wallet.referralEarnings || 0) : walletBalance;
+      if (amtNum > targetBalance) {
+        setErrorMessage(`Insufficient funds. Your selected ${withdrawSource === 'referral' ? 'referral earnings' : 'local share'} balance is ${formatNGN(targetBalance)}.`);
         return false;
       }
       
-      if (userHasReferrals) {
-        if (amtNum < minRefWithdrawal) {
-          setErrorMessage(`Minimum withdrawal amount for referral participants is ${formatNGN(minRefWithdrawal)}.`);
+      if (withdrawSource === 'referral' || userHasReferrals) {
+        const minVal = withdrawSource === 'referral' ? minRefWithdrawal : 2000;
+        if (amtNum < minVal) {
+          setErrorMessage(`Minimum withdrawal amount is ${formatNGN(minVal)}.`);
           return false;
         }
       } else {
@@ -185,16 +183,18 @@ export default function DepositWithdrawModal({
       setStep(3);
       
       const resolvedBankName = bankName === 'Other Bank (Type custom)' ? otherBankName : bankName;
+      const sourceLabel = withdrawSource === 'referral' ? 'Referral Earnings' : 'Shareholder Wallet';
       const detailsText = type === 'deposit' 
         ? `Deposited to Lafarge via ${method.toUpperCase()} (${method === 'card' ? 'Verve/Mastercard' : method === 'bank' ? 'Instant Bank Transfer' : 'USDT TRC20 Equivalent'})`
-        : `Withdrawn to ${method.toUpperCase()} (${method === 'bank' ? resolvedBankName + ' - ' + accountNo : cryptoAddress.substring(0, 6) + '...'})`;
+        : `Withdrawn from ${sourceLabel} to ${method.toUpperCase()} (${method === 'bank' ? resolvedBankName + ' - ' + accountNo : cryptoAddress.substring(0, 6) + '...'})`;
       
-      onConfirm(amtNum, type, detailsText);
+      onConfirm(amtNum, type, detailsText, type === 'withdraw' ? withdrawSource : 'wallet');
     }, 1500);
   };
 
   const resetModal = () => {
     setAmount('');
+    setWithdrawSource('wallet');
     setStep(1);
     setErrorMessage('');
     setIsProcessing(false);
@@ -254,15 +254,89 @@ export default function DepositWithdrawModal({
             </div>
           )}
 
-        {/* Step 1: Input Amount and Select Method */}
-        {step === 1 && (
+          {/* Step 1: Input Amount and Select Method */}
+          {step === 1 && (
           <div className="p-6 space-y-5">
+            {type === 'withdraw' && (
+              <>
+                {/* Prominent Referral Earnings Overview Banner */}
+                <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50/40 border border-amber-200/80 rounded-2xl flex items-center justify-between gap-3 animate-fade-in shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-amber-100 rounded-xl text-amber-700 shrink-0">
+                      <ArrowUpRight className="w-5 h-5 stroke-[2.5]" />
+                    </div>
+                    <div>
+                      <span className="block text-[10px] text-amber-700/80 uppercase font-black tracking-widest leading-none mb-1">Total Referral Commission</span>
+                      <span className="text-lg font-black text-amber-950 font-mono tracking-tight">{formatNGN(wallet.referralEarnings || 0)}</span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="inline-block text-[9px] font-black uppercase bg-amber-600 text-white px-2.5 py-1 rounded-lg tracking-wider font-mono">
+                      ⚡ 24/7 INSTANT PAYOUT
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2.5">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest">
+                    Withdrawal Source Balance
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWithdrawSource('wallet');
+                        setAmount('');
+                      }}
+                      className={`p-3 rounded-xl border-2 text-left transition-all relative ${
+                        withdrawSource === 'wallet'
+                          ? 'border-green-600 bg-green-50/25 text-green-950 shadow-sm'
+                          : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700'
+                      }`}
+                    >
+                      <span className="block text-[10px] uppercase font-black tracking-wider text-gray-400">Shareholder Balance</span>
+                      <span className="block text-sm font-black mt-0.5">{formatNGN(walletBalance)}</span>
+                      <span className="block text-[9px] font-bold text-gray-500 mt-1">NIBSS Window Check</span>
+                      {withdrawSource === 'wallet' && (
+                        <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-green-600" />
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWithdrawSource('referral');
+                        setAmount('');
+                      }}
+                      className={`p-3 rounded-xl border-2 text-left transition-all relative ${
+                        withdrawSource === 'referral'
+                          ? 'border-amber-600 bg-amber-50/15 text-amber-950 shadow-sm'
+                          : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700'
+                      }`}
+                    >
+                      <span className="block text-[10px] uppercase font-black tracking-wider text-amber-600">Referral Commission</span>
+                      <span className="block text-sm font-black mt-0.5">{formatNGN(wallet.referralEarnings || 0)}</span>
+                      <span className="block text-[9px] font-bold text-emerald-600 mt-1">⚡ 24/7 Payout Anytime</span>
+                      {withdrawSource === 'referral' && (
+                        <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-600" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+
             {type === 'withdraw' ? (
               <div className="p-3.5 bg-green-50/50 border border-green-150 rounded-xl space-y-1">
                 <span className="text-[10px] font-black uppercase text-green-805 tracking-widest block">⏰ WIthdrawal Window Check</span>
                 <p className="text-[11px] text-gray-550 leading-relaxed font-semibold">
-                  Payout approvals are active only between <strong className="text-[#028A34] font-black">10:00 AM and 12:00 PM</strong> daily. 
-                  Use the <span className="font-bold underline text-green-800">Time Machine</span> on the dashboard to skip to the processing window.
+                  {withdrawSource === 'referral' ? (
+                    <span className="text-emerald-800 font-bold">🎉 Anytime processing window bypassed for Referral Earnings. You can withdraw 24 hours a day instantly!</span>
+                  ) : adminApprovalSettings?.allowAnytimeWithdrawal ? (
+                    <span className="text-emerald-805 font-bold">🟢 Administrator Override Active: 24/7 Global Express Withdrawals are currently open!</span>
+                  ) : (
+                    <span>Payout approvals are active only between <strong className="text-[#028A34] font-black">10:00 AM and 12:00 PM</strong> daily. Use the <strong className="underline text-green-800">Time Machine</strong> on the dashboard to leap to withdrawal hours.</span>
+                  )}
                 </p>
               </div>
             ) : null}
@@ -275,25 +349,31 @@ export default function DepositWithdrawModal({
                 <input
                   id="input-amount"
                   type="number"
-                  placeholder={type === 'deposit' ? "1,000" : (userHasReferrals ? String(minRefWithdrawal) : "2,000")}
+                  placeholder={type === 'deposit' ? "1,000" : (withdrawSource === 'referral' ? String(minRefWithdrawal) : (userHasReferrals ? String(minRefWithdrawal) : "2,005"))}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className="w-full pl-9 pr-4 py-3.5 border-2 border-green-100 rounded-xl text-3xl font-bold bg-gray-50 focus:bg-white focus:border-green-500 focus:outline-none transition-all placeholder:text-gray-300 text-gray-800"
                 />
               </div>
               <div className="mt-2 flex justify-between text-xs text-gray-400">
-                <span>Min: ₦{type === 'deposit' ? '1,000.00' : (userHasReferrals ? minRefWithdrawal.toLocaleString() + '.00' : '2,000.00')}</span>
+                <span>Min: ₦{type === 'deposit' ? '1,000.00' : (withdrawSource === 'referral' ? minRefWithdrawal.toLocaleString() + '.00' : (userHasReferrals ? minRefWithdrawal.toLocaleString() + '.00' : '2,000.00'))}</span>
                 {type === 'withdraw' && (
-                  <span>Withdrawable Balance: <strong className="text-green-700">{formatNGN(walletBalance)}</strong></span>
+                  <span>Withdrawable Balance: <strong className="text-green-700">{formatNGN(withdrawSource === 'referral' ? (wallet.referralEarnings || 0) : walletBalance)}</strong></span>
                 )}
               </div>
             </div>
 
             {/* Quick amount shortcuts in Naira */}
             <div className="grid grid-cols-4 gap-2">
-              {(type === 'deposit' ? [1500, 3000, 5000, 10000] : (userHasReferrals ? [minRefWithdrawal, minRefWithdrawal * 2, minRefWithdrawal * 5, walletBalance] : [2000, 5000, 15000, walletBalance])).map((preset, idx) => {
-                const isMax = idx === 3 && type === 'withdraw';
-                if (preset <= 0) return null;
+              {(type === 'deposit' 
+                ? [1500, 3000, 5000, 10000] 
+                : (withdrawSource === 'referral'
+                  ? [minRefWithdrawal, minRefWithdrawal * 2, wallet.referralEarnings]
+                  : (userHasReferrals 
+                    ? [minRefWithdrawal, minRefWithdrawal * 2, minRefWithdrawal * 5, walletBalance] 
+                    : [2000, 5000, 15000, walletBalance]))).map((preset, idx) => {
+                if (!preset || preset <= 0) return null;
+                const isMax = (withdrawSource === 'referral' ? idx === 2 : idx === 3) && type === 'withdraw';
                 return (
                   <button
                     key={idx}
@@ -667,6 +747,15 @@ export default function DepositWithdrawModal({
                   <span className="bg-green-105 text-green-800 border border-green-150 font-black px-2 py-0.5 rounded text-[10px]">COMPLETED</span>
                 )}
               </div>
+              {type === 'withdraw' && (
+                <div className="flex justify-between items-start border-t border-gray-150/60 pt-2.5">
+                  <span className="text-gray-400 font-semibold mt-0.5">Processing Hours:</span>
+                  <div className="text-right">
+                    <span className="text-amber-700 font-bold block">10:00 AM – 12:00 PM</span>
+                    <span className="text-[10px] text-gray-500 block">Payouts approved daily during window</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <button
