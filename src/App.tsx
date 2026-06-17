@@ -436,6 +436,8 @@ export default function App() {
   const [ticketSubject, setTicketSubject] = useState('');
   const [ticketCategory, setTicketCategory] = useState('Deposit Issue');
   const [ticketSuccessInfo, setTicketSuccessInfo] = useState('');
+  const [selectedTicketIdForUser, setSelectedTicketIdForUser] = useState<string | null>(null);
+  const [userTicketReplyText, setUserTicketReplyText] = useState('');
 
   // Comprehensive historic txn list corresponding safely to visual balances in database storage
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
@@ -1216,52 +1218,51 @@ export default function App() {
 
   // Supervisor Approval Handlers
   const handleApproveReferral = (refId: string) => {
+    const targetRef = referrals.find(r => r.id === refId);
+    if (!targetRef || targetRef.status !== 'pending') return;
+
+    // 1. Update Referrals list status
     setReferrals((prevRefs) =>
-      prevRefs.map((r) => {
-        if (r.id === refId && r.status === 'pending') {
-          // Credit the Referrer
-          setRegisteredUsers((prevUsers) =>
-            prevUsers.map((u) => {
-              if (u.email.toLowerCase() === r.referrerEmail.toLowerCase()) {
-                const nextUser = {
-                  ...u,
-                  walletBalance: u.walletBalance + r.amount,
-                  earnedBalance: u.earnedBalance + r.amount,
-                  referralEarnings: u.referralEarnings + r.amount,
-                  referralsCount: u.referralsCount + 1
-                };
-                
-                // If this is also the active wallet of the user, we update that too
-                if (wallet && wallet.email.toLowerCase() === u.email.toLowerCase()) {
-                  setWallet(nextUser);
-                }
-                
-                return nextUser;
-              }
-              return u;
-            })
-          );
+      prevRefs.map((r) => (r.id === refId ? { ...r, status: 'approved' as const } : r))
+    );
 
-          // Append a transaction record for the referrer
-          setTransactions((prevTxs) => [
-            {
-              id: `tx-ref-auth-${Math.random().toString(36).substring(2, 9)}`,
-              type: 'payout' as const,
-              amount: r.amount,
-              status: 'completed' as const,
-              date: simulatedTime,
-              reference: generateRef(),
-              description: `Referral Approved: Successfully credited ₦${r.amount.toFixed(2)} bonus for referring ${r.referredName}!`,
-              userEmail: r.referrerEmail
-            },
-            ...prevTxs
-          ]);
-
-          return { ...r, status: 'approved' as const };
+    // 2. Credit the Referrer across database & active logged-in wallets
+    setRegisteredUsers((prevUsers) =>
+      prevUsers.map((u) => {
+        if (u.email.toLowerCase() === targetRef.referrerEmail.toLowerCase()) {
+          const nextUser = {
+            ...u,
+            walletBalance: u.walletBalance + targetRef.amount,
+            earnedBalance: u.earnedBalance + targetRef.amount,
+            referralEarnings: u.referralEarnings + targetRef.amount,
+            referralsCount: u.referralsCount + 1
+          };
+          
+          // If this is also the active wallet of the user, we update that too
+          if (wallet && wallet.email.toLowerCase() === u.email.toLowerCase()) {
+            setWallet(nextUser);
+          }
+          
+          return nextUser;
         }
-        return r;
+        return u;
       })
     );
+
+    // 3. Append a transaction record for the referrer
+    setTransactions((prevTxs) => [
+      {
+        id: `tx-ref-auth-${Math.random().toString(36).substring(2, 9)}`,
+        type: 'payout' as const,
+        amount: targetRef.amount,
+        status: 'completed' as const,
+        date: simulatedTime,
+        reference: generateRef(),
+        description: `Referral Approved: Successfully credited ₦${targetRef.amount.toFixed(2)} bonus for referring ${targetRef.referredName}!`,
+        userEmail: targetRef.referrerEmail
+      },
+      ...prevTxs
+    ]);
   };
 
   const handleDeclineReferral = (refId: string) => {
@@ -1276,32 +1277,38 @@ export default function App() {
   };
 
   const handleApproveDeposit = (txId: string) => {
+    const targetTx = transactions.find((tx) => tx.id === txId);
+    if (!targetTx || targetTx.status !== 'pending') return;
+
+    const emailToUpdate = (targetTx.userEmail || '').toLowerCase();
+
+    // 1. Update transactions list
     setTransactions((prev) =>
-      prev.map((tx) => {
-        if (tx.id === txId && tx.status === 'pending') {
-          const emailToUpdate = (tx.userEmail || '').toLowerCase() || 'jeremiahobazee11@gmail.com';
-          
-          setRegisteredUsers((prevUsers) =>
-            prevUsers.map((u) => {
-              if (u.email.toLowerCase() === emailToUpdate) {
-                const updated = {
-                  ...u,
-                  walletBalance: u.walletBalance + tx.amount,
-                };
+      prev.map((tx) =>
+        tx.id === txId
+          ? {
+              ...tx,
+              status: 'completed' as const,
+              description: tx.description.replace(' (Awaiting Paystack Audit Review)', ''),
+            }
+          : tx
+      )
+    );
 
-                return updated;
-              }
-              return u;
-            })
-          );
-
-          return {
-            ...tx,
-            status: 'completed' as const,
-            description: tx.description.replace(' (Awaiting Paystack Audit Review)', ''),
+    // 2. Update registered users database & the active logged-in wallet state if applicable
+    setRegisteredUsers((prevUsers) =>
+      prevUsers.map((u) => {
+        if (u.email.toLowerCase() === emailToUpdate) {
+          const nextUser = {
+            ...u,
+            walletBalance: u.walletBalance + targetTx.amount,
           };
+          if (wallet && wallet.email.toLowerCase() === u.email.toLowerCase()) {
+            setWallet(nextUser);
+          }
+          return nextUser;
         }
-        return tx;
+        return u;
       })
     );
   };
@@ -1322,55 +1329,75 @@ export default function App() {
   };
 
   const handleApproveWithdrawal = (txId: string) => {
+    const targetTx = transactions.find((tx) => tx.id === txId);
+    if (!targetTx || targetTx.status !== 'pending') return;
+
+    const emailToUpdate = (targetTx.userEmail || '').toLowerCase();
+
+    // 1. Update transactions list
     setTransactions((prev) =>
-      prev.map((tx) => {
-        if (tx.id === txId && tx.status === 'pending') {
-          const emailToUpdate = (tx.userEmail || '').toLowerCase() || 'jeremiahobazee11@gmail.com';
-          setRegisteredUsers((prevUsers) =>
-            prevUsers.map((u) => {
-              if (u.email.toLowerCase() === emailToUpdate) {
-                return {
-                  ...u,
-                  withdrawnBalance: u.withdrawnBalance + tx.amount,
-                };
-              }
-              return u;
-            })
-          );
-          return {
-            ...tx,
-            status: 'completed' as const,
-            description: tx.description.replace(' (Pending Corporate Executive Approval)', ''),
+      prev.map((tx) =>
+        tx.id === txId
+          ? {
+              ...tx,
+              status: 'completed' as const,
+              description: tx.description.replace(' (Pending Corporate Executive Approval)', ''),
+            }
+          : tx
+      )
+    );
+
+    // 2. Update registered users database & the active logged-in wallet state if applicable
+    setRegisteredUsers((prevUsers) =>
+      prevUsers.map((u) => {
+        if (u.email.toLowerCase() === emailToUpdate) {
+          const nextUser = {
+            ...u,
+            withdrawnBalance: u.withdrawnBalance + targetTx.amount,
           };
+          if (wallet && wallet.email.toLowerCase() === u.email.toLowerCase()) {
+            setWallet(nextUser);
+          }
+          return nextUser;
         }
-        return tx;
+        return u;
       })
     );
   };
 
   const handleDeclineWithdrawal = (txId: string) => {
+    const targetTx = transactions.find((tx) => tx.id === txId);
+    if (!targetTx || targetTx.status !== 'pending') return;
+
+    const emailToUpdate = (targetTx.userEmail || '').toLowerCase();
+
+    // 1. Update transactions list
     setTransactions((prev) =>
-      prev.map((tx) => {
-        if (tx.id === txId && tx.status === 'pending') {
-          const emailToUpdate = (tx.userEmail || '').toLowerCase() || 'jeremiahobazee11@gmail.com';
-          setRegisteredUsers((prevUsers) =>
-            prevUsers.map((u) => {
-              if (u.email.toLowerCase() === emailToUpdate) {
-                return {
-                  ...u,
-                  walletBalance: u.walletBalance + tx.amount,
-                };
-              }
-              return u;
-            })
-          );
-          return {
-            ...tx,
-            status: 'failed' as const,
-            description: tx.description.replace(' (Pending Corporate Executive Approval)', '') + ' (Rejected by Financial Auditor)',
+      prev.map((tx) =>
+        tx.id === txId
+          ? {
+              ...tx,
+              status: 'failed' as const,
+              description: tx.description.replace(' (Pending Corporate Executive Approval)', '') + ' (Rejected by Financial Auditor)',
+            }
+          : tx
+      )
+    );
+
+    // 2. Refund user's database entry and the active logged-in wallet state
+    setRegisteredUsers((prevUsers) =>
+      prevUsers.map((u) => {
+        if (u.email.toLowerCase() === emailToUpdate) {
+          const nextUser = {
+            ...u,
+            walletBalance: u.walletBalance + targetTx.amount,
           };
+          if (wallet && wallet.email.toLowerCase() === u.email.toLowerCase()) {
+            setWallet(nextUser);
+          }
+          return nextUser;
         }
-        return tx;
+        return u;
       })
     );
   };
@@ -1693,6 +1720,28 @@ export default function App() {
           };
           return {
             ...t,
+            messages: [...(t.messages || []), newMsg]
+          };
+        }
+        return t;
+      })
+    );
+  };
+
+  const handleUserReplyToTicket = (ticketId: string, text: string) => {
+    setCsTickets(prev =>
+      prev.map(t => {
+        if (t.id === ticketId) {
+          const newMsg = {
+            id: `msg-${Math.floor(100000 + Math.random() * 900000)}`,
+            sender: 'user' as const,
+            senderName: wallet.fullName,
+            text,
+            date: simulatedTime
+          };
+          return {
+            ...t,
+            status: 'pending' as const,
             messages: [...(t.messages || []), newMsg]
           };
         }
@@ -2873,31 +2922,140 @@ export default function App() {
                 </div>
 
                 {/* Tickets History Lists */}
-                <div className="bg-white border border-gray-150 rounded-2xl p-5 shadow-sm space-y-4">
-                  <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">Your Ticket History</h4>
-                  
-                  <div className="space-y-3 divide-y divide-gray-100">
-                    {csTickets.map((t, index) => (
-                      <div key={t.id} className={`pt-3 first:pt-0 space-y-1.5`}>
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-mono font-black text-gray-500">{t.id}</span>
-                          <span className={`text-[9px] uppercase px-2 py-0.5 rounded-md font-bold tracking-wider ${
-                            t.status === 'resolved'
-                              ? 'bg-green-50 text-green-700 border border-green-150'
-                              : 'bg-amber-50 text-amber-700 border border-amber-150 animate-pulse'
-                          }`}>
-                            {t.status}
-                          </span>
-                        </div>
-                        <h5 className="text-xs font-extrabold text-gray-950 leading-tight">{t.subject}</h5>
-                        <div className="flex items-center gap-2 text-[9px] text-gray-450 font-bold uppercase tracking-wider">
-                          <span>{t.category}</span>
-                          <span>•</span>
-                          <span>{new Date(t.date).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                    ))}
+                <div className="bg-white border border-gray-150 rounded-2xl p-5 shadow-sm space-y-4 text-left">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">Your Ticket History</h4>
+                    {selectedTicketIdForUser && (
+                      <button
+                        onClick={() => {
+                          setSelectedTicketIdForUser(null);
+                          setUserTicketReplyText('');
+                        }}
+                        className="text-[10px] text-gray-400 hover:text-gray-700 font-extrabold uppercase tracking-wide cursor-pointer flex items-center gap-1"
+                      >
+                        &larr; View All List
+                      </button>
+                    )}
                   </div>
+                  
+                  {selectedTicketIdForUser ? (() => {
+                    const ticket = csTickets.find(t => t.id === selectedTicketIdForUser);
+                    if (!ticket) return <p className="text-xs text-gray-400">Selected ticket not found.</p>;
+                    return (
+                      <div className="space-y-4 animate-fade-in text-left">
+                        <div className="p-3 bg-slate-50 border border-slate-150 rounded-xl space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-mono font-black text-gray-500">{ticket.id}</span>
+                            <span className={`text-[9px] uppercase px-2 py-0.5 rounded-md font-bold tracking-wider ${
+                              ticket.status === 'resolved'
+                                ? 'bg-green-150 text-green-800 border border-green-205'
+                                : 'bg-amber-100 text-amber-805 border border-amber-200'
+                            }`}>
+                              {ticket.status}
+                            </span>
+                          </div>
+                          <p className="text-xs font-extrabold text-slate-800">{ticket.subject}</p>
+                          <div className="flex items-center gap-2 text-[9px] text-gray-400 font-bold uppercase tracking-wider">
+                            <span>Category: {ticket.category}</span>
+                            <span>•</span>
+                            <span>{new Date(ticket.date).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+
+                        {/* Message Transcript */}
+                        <div className="space-y-3 max-h-[180px] overflow-y-auto p-1.5 border border-dashed border-gray-150 rounded-xl bg-slate-50/15 flex flex-col gap-2">
+                          {ticket.messages && ticket.messages.map((m) => (
+                            <div
+                              key={m.id}
+                              className={`flex flex-col max-w-[90%] ${
+                                m.sender === 'user' ? 'self-end items-end' : 'self-start items-start'
+                              }`}
+                            >
+                              <span className="text-[8px] font-bold text-gray-400 mb-0.5">{m.senderName}</span>
+                              <div className={`px-3 py-1.5 rounded-xl text-xs font-semibold leading-relaxed ${
+                                m.sender === 'user'
+                                  ? 'bg-[#028A34] text-white rounded-tr-none'
+                                  : 'bg-white border border-gray-200 text-slate-900 rounded-tl-none'
+                              }`}>
+                                {m.text}
+                              </div>
+                              <span className="text-[7px] text-gray-450 mt-0.5 font-mono">{new Date(m.date).toLocaleTimeString()}</span>
+                            </div>
+                          ))}
+                          {(!ticket.messages || ticket.messages.length === 0) && (
+                            <p className="text-center text-[10px] text-gray-400 py-3 font-semibold italic">No messages registered yet.</p>
+                          )}
+                        </div>
+
+                        {/* Interactive Reply form */}
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            if (!userTicketReplyText.trim()) return;
+                            handleUserReplyToTicket(ticket.id, userTicketReplyText);
+                            setUserTicketReplyText('');
+                          }}
+                          className="flex gap-2"
+                        >
+                          <input
+                            type="text"
+                            value={userTicketReplyText}
+                            onChange={(e) => setUserTicketReplyText(e.target.value)}
+                            placeholder="Type response to support advisor..."
+                            className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:bg-white focus:ring-1 focus:ring-green-500"
+                          />
+                          <button
+                            type="submit"
+                            disabled={!userTicketReplyText.trim()}
+                            className="px-4 py-2 bg-[#028A34] text-white hover:bg-green-800 disabled:opacity-50 text-xs font-black uppercase rounded-xl transition-all cursor-pointer flex items-center gap-1 shrink-0 shadow-xs"
+                          >
+                            Send <Send className="w-3 h-3" />
+                          </button>
+                        </form>
+                      </div>
+                    );
+                  })() : (
+                    <div className="space-y-2 divide-y divide-gray-100 max-h-[300px] overflow-y-auto pr-1">
+                      {csTickets.filter(t => t.userEmail && t.userEmail.toLowerCase() === wallet.email.toLowerCase()).length === 0 ? (
+                        <div className="p-4 text-center text-xs text-gray-400 font-bold italic">
+                          No active priority tickets generated yet.
+                        </div>
+                      ) : (
+                        csTickets
+                          .filter(t => t.userEmail && t.userEmail.toLowerCase() === wallet.email.toLowerCase())
+                          .map((t, index) => (
+                            <div
+                              key={t.id}
+                              onClick={() => {
+                                setSelectedTicketIdForUser(t.id);
+                                setUserTicketReplyText('');
+                              }}
+                              className="pt-2 first:pt-0 space-y-1 cursor-pointer hover:bg-slate-50/80 p-2 rounded-xl transition-all border border-transparent hover:border-slate-100"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-mono font-black text-gray-400">{t.id}</span>
+                                <span className={`text-[9px] uppercase px-2 py-0.5 rounded-md font-bold tracking-wider ${
+                                  t.status === 'resolved'
+                                    ? 'bg-green-50 text-green-700 border border-green-150'
+                                    : 'bg-amber-50 text-amber-700 border border-amber-150 animate-pulse'
+                                }`}>
+                                  {t.status}
+                                </span>
+                              </div>
+                              <h5 className="text-xs font-extrabold text-gray-950 leading-tight block">{t.subject}</h5>
+                              <div className="flex items-center justify-between text-[9px] text-gray-450 font-bold uppercase tracking-wider">
+                                <div className="flex items-center gap-2">
+                                  <span>{t.category}</span>
+                                  <span>•</span>
+                                  <span>{new Date(t.date).toLocaleDateString()}</span>
+                                </div>
+                                <span className="text-[#028A34] underline font-black text-[8px] tracking-wide uppercase">Open Chat &rarr;</span>
+                              </div>
+                            </div>
+                          ))
+                      )}
+                    </div>
+                  )}
                 </div>
 
               </div>

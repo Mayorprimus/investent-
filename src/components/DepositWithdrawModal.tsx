@@ -615,35 +615,57 @@ export default function DepositWithdrawModal({
         {/* Step 3: Success Receipt */}
         {step === 3 && (
           <div className="p-8 text-center space-y-6">
-            <div className="w-16 h-16 bg-green-150 rounded-full flex items-center justify-center mx-auto text-[#028A34]">
-              <CheckCircle className="w-10 h-10 text-[#028A34]" />
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${
+              type === 'deposit' && adminApprovalSettings?.requireDepositApproval
+                ? 'bg-amber-100 text-amber-600'
+                : 'bg-green-150 rounded-full text-[#028A34]'
+            }`}>
+              {type === 'deposit' && adminApprovalSettings?.requireDepositApproval ? (
+                <AlertCircle className="w-10 h-10 text-amber-600" />
+              ) : (
+                <CheckCircle className="w-10 h-10 text-[#028A34]" />
+              )}
             </div>
             
             <div className="space-y-1">
               <h4 className="text-xl font-bold text-gray-900">
-                {type === 'deposit' ? 'Deposit Successful NIBSS' : 'Withdrawal Registered'}
+                {type === 'deposit' 
+                  ? (adminApprovalSettings?.requireDepositApproval ? 'Deposit Awaiting Audit' : 'Deposit Successful NIBSS') 
+                  : 'Withdrawal Registered'}
               </h4>
-              <p className="text-sm text-gray-400">
-                {type === 'deposit' ? 'Your Lafarge wallet has been credited in Naira instantly.' : 'Funds are heading to your registered bank routing.'}
+              <p className="text-sm text-gray-500 leading-relaxed font-medium">
+                {type === 'deposit' 
+                  ? (adminApprovalSettings?.requireDepositApproval 
+                      ? 'Your pending balance will be updated after system confirmation.' 
+                      : 'Your Lafarge wallet has been credited in Naira instantly.') 
+                  : 'Funds are heading to your registered bank routing.'}
               </p>
             </div>
 
-            <div className="border border-green-100 rounded-xl p-4 bg-green-50/20 text-left space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-gray-450">Transaction Ref:</span>
-                <span className="font-mono text-gray-750 font-semibold">{finalTxRef}</span>
+            <div className={`border rounded-xl p-4 text-left space-y-3 text-xs ${
+              type === 'deposit' && adminApprovalSettings?.requireDepositApproval
+                ? 'border-amber-200 bg-amber-50/10'
+                : 'border-green-100 bg-green-50/20'
+            }`}>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 font-semibold">Transaction Ref:</span>
+                <span className="font-mono text-gray-750 font-black select-all">{finalTxRef}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-450">Value Date:</span>
-                <span className="text-gray-750 font-semibold">{new Date().toLocaleString('en-NG')}</span>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 font-semibold">Value Date:</span>
+                <span className="text-gray-750 font-bold">{new Date().toLocaleString('en-NG')}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-451">Total Capital:</span>
-                <span className="text-[#028A34] font-bold text-sm">{formatNGN(parseFloat(amount))}</span>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 font-semibold">Total Capital:</span>
+                <span className="text-[#028A34] font-black text-sm">{formatNGN(parseFloat(amount))}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-450 font-semibold">Status:</span>
-                <span className="bg-green-105 text-green-800 font-semibold px-2 py-0.5 rounded text-[10px]">COMPLETED</span>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 font-semibold">Status:</span>
+                {type === 'deposit' && adminApprovalSettings?.requireDepositApproval ? (
+                  <span className="bg-amber-100 text-amber-800 border border-amber-200 font-black px-2 py-0.5 rounded text-[10px] tracking-wide uppercase">PENDING CONFIRMATION</span>
+                ) : (
+                  <span className="bg-green-105 text-green-800 border border-green-150 font-black px-2 py-0.5 rounded text-[10px]">COMPLETED</span>
+                )}
               </div>
             </div>
 

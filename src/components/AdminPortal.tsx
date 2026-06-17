@@ -26,7 +26,10 @@ import {
   Eye,
   Gift,
   Award,
-  Sparkles
+  Sparkles,
+  ArrowRight,
+  Copy,
+  Check
 } from 'lucide-react';
 import { formatNGN } from '../utils';
 import { Transaction, ActiveInvestment, UserWallet, SupportTicket, DepositAccount, ReferralRelationship } from '../types';
@@ -175,6 +178,7 @@ export default function AdminPortal({
   const [replyInput, setReplyInput] = useState('');
   const [adminRole, setAdminRole] = useState<'admin' | 'agent'>('agent');
   const [supportMode, setSupportMode] = useState<'tickets' | 'chats'>('tickets');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Deposit Accounts Form States
   const [newBankName, setNewBankName] = useState('');
@@ -1023,56 +1027,109 @@ export default function AdminPortal({
               <p className="text-xs text-gray-400 font-sans">Any brand-new signups containing specified active promo codes will register here for supervisor review.</p>
             </div>
           ) : (
-            <div className="space-y-4 divide-y divide-gray-100">
-              {referralsList.map((ref) => (
-                <div key={ref.id} className="pt-4 first:pt-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 font-sans text-xs">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-50 border border-amber-150 text-amber-700 rounded-md">
-                        REWARD: ₦{formatNGN(ref.amount)}
+            <div className="space-y-6 divide-y divide-gray-150">
+              {referralsList.map((ref, idx) => {
+                const referrerUser = registeredUsers.find(
+                  u => u.email.toLowerCase() === ref.referrerEmail.toLowerCase()
+                );
+                const refereeUser = registeredUsers.find(
+                  u => u.email.toLowerCase() === ref.referredEmail.toLowerCase()
+                );
+                const referrerName = referrerUser ? referrerUser.fullName : 'Sponsor User';
+                const referrerRank = referrerUser ? (referrerUser.approvedLevel || 'Standard Member') : 'Standard Member';
+
+                return (
+                  <div key={ref.id} className={`space-y-3 font-sans text-xs ${idx > 0 ? 'pt-6' : ''}`}>
+                    {/* Status & Reward Badge Bar */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-gray-50/50 p-2.5 rounded-xl border border-gray-100">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[10px] font-black px-2.5 py-1 bg-emerald-50 border border-emerald-150 text-emerald-800 rounded-md tracking-wide">
+                          REWARD: ₦{formatNGN(ref.amount)}
+                        </span>
+                        <span className={`text-[9.5px] uppercase font-black px-2.5 py-1 rounded-md tracking-wider border ${
+                          ref.status === 'approved' 
+                            ? 'bg-green-50 text-green-700 border-green-150' 
+                            : ref.status === 'rejected'
+                            ? 'bg-red-50 text-red-650 border-red-150'
+                            : 'bg-yellow-50 text-yellow-750 border-yellow-150 animate-pulse'
+                        }`}>
+                          STATUS: {ref.status.toUpperCase()}
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-mono">Ledger ID: {ref.id}</span>
+                      </div>
+                      <span className="text-[10px] text-gray-400 font-sans font-bold">
+                        Registered At: {new Date(ref.date).toLocaleString()}
                       </span>
-                      <span className={`text-[9px] uppercase font-black px-2 py-0.5 rounded-md tracking-wider border ${
-                        ref.status === 'approved' 
-                          ? 'bg-green-50 text-green-700 border-green-150' 
-                          : ref.status === 'rejected'
-                          ? 'bg-red-50 text-red-650 border-red-150'
-                          : 'bg-yellow-50 text-yellow-750 border-yellow-150 animate-pulse'
-                      }`}>
-                        {ref.status}
-                      </span>
-                      <span className="text-[10px] text-gray-400 font-mono">ID: {ref.id}</span>
                     </div>
 
-                    <div className="space-y-0.5 text-gray-600 font-semibold text-[11px]">
-                      <p>
-                        Referrer Email: <strong className="text-gray-900 font-bold">{ref.referrerEmail}</strong>
-                        <span className="ml-1 font-mono text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-500 font-bold">[{ref.referrerCode}]</span>
-                      </p>
-                      <p>
-                        Referred Sign-up: <strong className="text-green-700 font-extrabold">{ref.referredName}</strong> ({ref.referredEmail})
-                      </p>
-                      <p className="text-[10px] text-gray-400 font-mono font-bold leading-none mt-1">Date Registered: {new Date(ref.date).toLocaleString()}</p>
+                    {/* Flow Relationship Visualizer - Who Referred Who */}
+                    <div className="grid grid-cols-1 md:grid-cols-11 gap-3 items-center border border-gray-155 p-3 rounded-xl bg-white shadow-3xs">
+                      
+                      {/* Referrer Column */}
+                      <div className="md:col-span-5 bg-emerald-50/10 border border-emerald-100/75 p-3 rounded-lg space-y-1">
+                        <span className="text-[9px] uppercase font-black tracking-widest text-[#028A34] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-150 inline-block mb-1">
+                          👤 SPONSOR / REFERRER
+                        </span>
+                        <h5 className="font-black text-gray-950 text-sm leading-tight">{referrerName}</h5>
+                        <p className="text-[10.5px] text-gray-500 font-semibold">{ref.referrerEmail}</p>
+                        <div className="pt-1 flex flex-wrap items-center gap-1.5 text-[10px] font-semibold text-gray-400">
+                          <span>Invite Code:</span>
+                          <code className="text-[#028A34] font-mono bg-[#028A34]/5 border border-[#028A34]/15 px-1.5 py-0.2 rounded font-black">{ref.referrerCode}</code>
+                          <span>|</span>
+                          <span>Rank:</span>
+                          <span className="text-slate-800 font-black">{referrerRank}</span>
+                        </div>
+                      </div>
+
+                      {/* Direction Arrow Component */}
+                      <div className="md:col-span-1 flex flex-col items-center justify-center py-1 md:py-0 text-center">
+                        <div className="text-[9px] font-black text-emerald-800 tracking-widest uppercase font-mono bg-emerald-50 border border-emerald-150 px-1.5 py-0.5 rounded-full mb-1">
+                          referred
+                        </div>
+                        <div className="hidden md:block text-emerald-600">
+                          <ArrowRight className="w-5 h-5 stroke-[2.5]" />
+                        </div>
+                        <div className="md:hidden text-emerald-600 rotate-90 my-0.5">
+                          <ArrowRight className="w-5 h-5 stroke-[2.5]" />
+                        </div>
+                      </div>
+
+                      {/* Referee Column */}
+                      <div className="md:col-span-5 bg-sky-50/10 border border-sky-100/75 p-3 rounded-lg space-y-1">
+                        <span className="text-[9px] uppercase font-black tracking-widest text-sky-850 bg-sky-50 px-2 py-0.5 rounded border border-sky-150 inline-block mb-1">
+                          ✨ REFERRED SIGN-UP
+                        </span>
+                        <h5 className="font-black text-gray-950 text-sm leading-tight">{ref.referredName}</h5>
+                        <p className="text-[10.5px] text-gray-500 font-semibold">{ref.referredEmail}</p>
+                        <div className="pt-1 flex flex-wrap items-center gap-1 text-[10px] font-semibold text-gray-400">
+                          <span className="text-sky-750 font-bold bg-sky-50 px-1.5 py-0.5 rounded border border-sky-100">
+                            Get ₦500.00 onboarding reward credited live
+                          </span>
+                        </div>
+                      </div>
+
                     </div>
+
+                    {/* Pending Action Buttons */}
+                    {ref.status === 'pending' && (
+                      <div className="flex items-center gap-2 self-end justify-end w-full pt-1.5">
+                        <button
+                          onClick={() => onDeclineReferral(ref.id)}
+                          className="px-4 py-2 bg-red-50 hover:bg-red-100 border border-red-150 text-red-700 hover:text-red-950 rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5 transition-all"
+                        >
+                          <XCircle className="w-4 h-4" /> Reject referral
+                        </button>
+                        <button
+                          onClick={() => onApproveReferral(ref.id)}
+                          className="px-5 py-2.5 bg-[#028A34] hover:bg-green-800 text-white rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-green-150 transition-all"
+                        >
+                          <CheckCircle className="w-4 h-4" /> Approve & Credit Sponsor
+                        </button>
+                      </div>
+                    )}
                   </div>
-
-                  {ref.status === 'pending' && (
-                    <div className="flex items-center gap-2 w-full md:w-auto self-end md:self-center shrink-0">
-                      <button
-                        onClick={() => onDeclineReferral(ref.id)}
-                        className="flex-1 md:flex-initial px-4 py-2 bg-red-50 hover:bg-red-100 border border-red-150 text-red-700 hover:text-red-950 rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5"
-                      >
-                        <XCircle className="w-4 h-4" /> Reject referral
-                      </button>
-                      <button
-                        onClick={() => onApproveReferral(ref.id)}
-                        className="flex-1 md:flex-initial px-5 py-2.5 bg-[#028A34] hover:bg-green-800 text-white rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-green-150"
-                      >
-                        <CheckCircle className="w-4 h-4" /> Approve & Credit Row
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -1215,48 +1272,160 @@ export default function AdminPortal({
                 const applicant = registeredUsers.find(u => u.email.toLowerCase() === (tx.userEmail || '').toLowerCase());
                 const applicantName = applicant ? applicant.fullName : 'Premium Shareholder';
                 const applicantAccount = applicant ? (applicant.accountNumber || 'Pending settlement setup') : 'Pending settlement setup';
+
+                // Parse account details
+                let paymentType = 'Unknown Method';
+                let parsedAccountNum = applicantAccount;
+                let parsedBankBrand = 'Configured Route';
+
+                if (applicantAccount.startsWith('NG-ACC-')) {
+                  const stripped = applicantAccount.replace('NG-ACC-', '');
+                  const parts = stripped.split('|');
+                  paymentType = 'Commercial Bank Transfer (NUBAN)';
+                  parsedAccountNum = parts[0] || 'N/A';
+                  parsedBankBrand = parts[1] || 'Commercial Bank';
+                } else if (applicantAccount.startsWith('OPAY-')) {
+                  paymentType = 'OPay Microfinance e-Wallet';
+                  parsedAccountNum = applicantAccount.replace('OPAY-', '');
+                  parsedBankBrand = 'OPay (Mobile Money)';
+                } else if (applicantAccount.startsWith('T') && applicantAccount.length >= 26) {
+                  paymentType = 'USDT Ledger Address (TRC-20)';
+                  parsedAccountNum = applicantAccount;
+                  parsedBankBrand = 'TRON Network (USDT)';
+                } else if (applicantAccount.includes('|')) {
+                  const parts = applicantAccount.split('|');
+                  parsedAccountNum = parts[0] || 'N/A';
+                  parsedBankBrand = parts[1] || 'Custom Route';
+                }
+
                 return (
-                  <div key={tx.id} className="p-4 bg-slate-50 border border-slate-150 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all hover:bg-slate-50/80">
-                    <div className="space-y-1.5 flex-1 w-full">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="px-2 py-0.5 bg-red-100 border border-red-150 text-red-800 uppercase font-black text-[9px] tracking-wider rounded">Awaiting Approval</span>
-                        <span className="text-[10px] font-mono text-gray-400 font-bold">REF: {tx.reference}</span>
-                        {tx.userEmail && <span className="text-[10px] font-mono text-[#028A34] font-black">{tx.userEmail}</span>}
-                      </div>
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-xl font-black font-mono text-gray-950">{formatNGN(tx.amount)}</span>
-                        <span className="text-xs text-red-705 font-black uppercase tracking-widest">Payout Exit Transfer</span>
-                      </div>
-                      <p className="text-xs text-gray-550 leading-relaxed font-semibold">{tx.description}</p>
-                      <div className="p-2.5 bg-white border border-gray-150 rounded-xl text-[10px] text-gray-450 font-bold space-y-1.5">
-                        <div className="flex justify-between border-b border-gray-50 pb-1.5">
-                          <span>Account Holder:</span>
-                          <span className="text-gray-950 font-black">{applicantName}</span>
+                  <div key={tx.id} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col md:flex-row justify-between items-start gap-5 transition-all hover:bg-slate-50/80">
+                    <div className="space-y-3.5 flex-1 w-full">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="px-2.5 py-0.5 bg-red-100 border border-red-150 text-red-800 uppercase font-black text-[9px] tracking-wider rounded">Awaiting Approval</span>
+                          <span className="text-[10px] font-mono text-gray-400 font-bold">REF: {tx.reference}</span>
+                          {tx.userEmail && (
+                            <span className="text-[10px] font-mono text-[#028A34] font-black bg-emerald-50 border border-emerald-100 px-1.5 py-0.2 rounded">
+                              {tx.userEmail}
+                            </span>
+                          )}
                         </div>
-                        <div className="flex justify-between border-b border-gray-50 pb-1.5">
-                          <span>Receiving Details:</span>
-                          <span className="text-[#028A34] font-black select-all">{applicantAccount}</span>
+                        <span className="text-[10.5px] text-gray-450 font-bold">
+                          Requested: {new Date(tx.date).toLocaleString()}
+                        </span>
+                      </div>
+
+                      <div className="flex items-baseline gap-1.5 border-b border-gray-200 pb-2">
+                        <span className="text-2xl font-black font-mono text-gray-950">{formatNGN(tx.amount)}</span>
+                        <span className="text-[11px] text-red-705 font-black uppercase tracking-wider">Payout Claim Outflow</span>
+                      </div>
+
+                      <p className="text-xs text-gray-550 leading-relaxed font-semibold bg-white p-2.5 rounded-xl border border-gray-150">
+                        <strong className="text-gray-400 text-[10px] uppercase font-black block mb-0.5">Withdrawal Narrative:</strong>
+                        {tx.description}
+                      </p>
+
+                      {/* Payee Disbursement Slip */}
+                      <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-3xs space-y-3.5">
+                        <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
+                          <span className="text-[9.5px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1">🏦 Direct Payee Disbursement Coordinates</span>
+                          <span className="text-[9.5px] font-black text-[#028A34] bg-[#028A34]/5 border border-[#028A34]/15 px-2.5 py-0.5 rounded uppercase font-mono tracking-wider">
+                            {paymentType}
+                          </span>
                         </div>
-                        <div className="flex justify-between">
-                          <span>Requested At:</span>
-                          <span className="text-gray-950 font-bold">{new Date(tx.date).toLocaleString()}</span>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          {/* Beneficiary Name */}
+                          <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-2.5 relative flex flex-col justify-between">
+                            <div className="pr-12">
+                              <span className="text-[8.5px] text-gray-400 uppercase font-black tracking-wider block mb-0.5">Beneficiary Name</span>
+                              <p className="text-xs font-extrabold text-gray-900 select-all">{applicantName}</p>
+                            </div>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(applicantName);
+                                setCopiedId(`${tx.id}-name`);
+                                setTimeout(() => setCopiedId(null), 1500);
+                              }}
+                              className="absolute top-2.5 right-2 p-1 bg-white border border-gray-200 hover:bg-gray-50 text-gray-500 hover:text-gray-800 rounded-md transition-all cursor-pointer flex items-center gap-1 text-[8px] font-black uppercase tracking-wider"
+                            >
+                              {copiedId === `${tx.id}-name` ? (
+                                <><Check className="w-3 h-3 text-green-600" /> <span className="text-green-600 font-extrabold">Copied</span></>
+                              ) : (
+                                <><Copy className="w-3 h-3 text-gray-400" /> <span>Copy</span></>
+                              )}
+                            </button>
+                          </div>
+
+                          {/* Account number / USDT */}
+                          <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-2.5 relative flex flex-col justify-between">
+                            <div className="pr-12">
+                              <span className="text-[8.5px] text-gray-400 uppercase font-black tracking-wider block mb-0.5">Account NUBAN / Coordinates</span>
+                              <p className="text-xs font-black text-[#028A34] font-mono tracking-wide select-all break-all">{parsedAccountNum}</p>
+                            </div>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(parsedAccountNum);
+                                setCopiedId(`${tx.id}-acc`);
+                                setTimeout(() => setCopiedId(null), 1500);
+                              }}
+                              className="absolute top-2.5 right-2 p-1 bg-white border border-gray-200 hover:bg-gray-50 text-gray-500 hover:text-gray-800 rounded-md transition-all cursor-pointer flex items-center gap-1 text-[8px] font-black uppercase tracking-wider"
+                            >
+                              {copiedId === `${tx.id}-acc` ? (
+                                <><Check className="w-3 h-3 text-green-600" /> <span className="text-green-600 font-extrabold">Copied</span></>
+                              ) : (
+                                <><Copy className="w-3 h-3 text-gray-400" /> <span>Copy</span></>
+                              )}
+                            </button>
+                          </div>
+
+                          {/* Bank Branch / Network */}
+                          <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-2.5 relative flex flex-col justify-between">
+                            <div className="pr-12">
+                              <span className="text-[8.5px] text-gray-400 uppercase font-black tracking-wider block mb-0.5">Receiving Institute</span>
+                              <p className="text-xs font-extrabold text-gray-900 select-all">{parsedBankBrand}</p>
+                            </div>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(parsedBankBrand);
+                                setCopiedId(`${tx.id}-bank`);
+                                setTimeout(() => setCopiedId(null), 1500);
+                              }}
+                              className="absolute top-2.5 right-2 p-1 bg-white border border-gray-200 hover:bg-gray-50 text-gray-500 hover:text-gray-800 rounded-md transition-all cursor-pointer flex items-center gap-1 text-[8px] font-black uppercase tracking-wider"
+                            >
+                              {copiedId === `${tx.id}-bank` ? (
+                                <><Check className="w-3 h-3 text-green-600" /> <span className="text-green-600 font-extrabold">Copied</span></>
+                              ) : (
+                                <><Copy className="w-3 h-3 text-gray-400" /> <span>Copy</span></>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Extra guide */}
+                        <div className="p-2.5 rounded-xl bg-orange-50/50 border border-orange-100 text-[10.5px] text-amber-800 leading-normal font-sans space-y-0.5">
+                          <p className="font-extrabold">&#9755; Corporate Payout Guide:</p>
+                          <p>
+                            Disperse exactly <strong>₦{tx.amount.toLocaleString()}</strong> utilizing your business bank application. Set account number to <strong>{parsedAccountNum}</strong>, select <strong>{parsedBankBrand}</strong>, and verify receipt name reads <strong>{applicantName}</strong> before clearing.
+                          </p>
                         </div>
                       </div>
                     </div>
 
                     {/* Actions buttons */}
-                    <div className="flex items-center gap-2.5 w-full md:w-auto self-end md:self-center shrink-0">
+                    <div className="flex flex-row md:flex-col items-center gap-2 w-full md:w-auto md:self-stretch justify-end shrink-0 md:pt-4">
                       <button
                         onClick={() => onDeclineWithdrawal(tx.id)}
-                        className="flex-1 md:flex-initial px-4 py-2 bg-red-50 hover:bg-red-100 border border-red-150 text-red-700 hover:text-red-955 rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5"
+                        className="flex-1 md:flex-initial px-4 py-2.5 bg-red-50 hover:bg-red-100 border border-red-150 text-red-700 hover:text-red-955 rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5 transition-all w-full"
                       >
-                        <XCircle className="w-4 h-4" /> Decline & Refund Wallet
+                        <XCircle className="w-4 h-4" /> Decline & Refund
                       </button>
                       <button
                         onClick={() => onApproveWithdrawal(tx.id)}
-                        className="flex-1 md:flex-initial px-5 py-2.5 bg-[#028A34] hover:bg-green-800 text-white rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-green-150"
+                        className="flex-1 md:flex-initial px-5 py-3 bg-[#028A34] hover:bg-green-800 text-white rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-green-150 transition-all w-full"
                       >
-                        <CheckCircle className="w-4 h-4" /> Verify & Authorize Payout
+                        <CheckCircle className="w-4 h-4" /> Authorize Payout
                       </button>
                     </div>
                   </div>
