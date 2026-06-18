@@ -47,56 +47,6 @@ import SplashScreen from './components/SplashScreen';
 import PromoReferralModal from './components/PromoReferralModal';
 import { motion } from 'motion/react';
 
-function areWalletsEqual(w1: UserWallet | undefined, w2: UserWallet | undefined): boolean {
-  if (!w1 && !w2) return true;
-  if (!w1 || !w2) return false;
-  
-  const keysToCompare: (keyof UserWallet)[] = [
-    'walletBalance',
-    'investedBalance',
-    'withdrawnBalance',
-    'earnedBalance',
-    'accountNumber',
-    'fullName',
-    'email',
-    'referralCode',
-    'referralsCount',
-    'referralEarnings',
-    'isFlagged',
-    'requireReferralToWithdraw',
-    'requireReferralDepositToWithdraw',
-    'hasClaimedBonus',
-    'password',
-    'referredBy',
-    'autoInvest',
-    'approvedLevel',
-    'pendingLevelUpgrade'
-  ];
-  
-  for (const key of keysToCompare) {
-    const val1 = w1[key];
-    const val2 = w2[key];
-    
-    // Normalize undefined / null / false for optional booleans to avoid mismatch
-    if (typeof val1 === 'boolean' || typeof val2 === 'boolean') {
-      if (!!val1 !== !!val2) return false;
-      continue;
-    }
-    
-    // Handle potential NaN values
-    if (typeof val1 === 'number' && typeof val2 === 'number') {
-      if (isNaN(val1) && isNaN(val2)) continue;
-      if (Math.abs(val1 - val2) > 0.0001) return false;
-      continue;
-    }
-    
-    // Normal comparison for strings or other types
-    if ((val1 ?? '') !== (val2 ?? '')) return false;
-  }
-  
-  return true;
-}
-
 export default function App() {
   const [isSplashActive, setIsSplashActive] = useState(true);
   const [showPromoModal, setShowPromoModal] = useState(false);
@@ -572,10 +522,6 @@ export default function App() {
       try {
         const res = await fetch('/api/sync');
         if (res.ok && isMounted) {
-          const contentType = res.headers.get('content-type');
-          if (!contentType || !contentType.includes('application/json')) {
-            throw new Error('Response is not JSON (received HTML/text instead), server may be restarting');
-          }
           const data = await res.json();
           if (data && (data.version > localVersion.current || !isInitializedFromServer.current)) {
             // New changes exist on server database. Lock synchronizer feedback and update state.
@@ -613,15 +559,7 @@ export default function App() {
       } catch (e) {
         // Gracefully warning-log transient network/restart errors, only error on true logical bugs
         const errorMsg = e instanceof Error ? e.message : String(e);
-        if (
-          errorMsg.includes('Failed to fetch') ||
-          errorMsg.includes('fetch') ||
-          errorMsg.includes('network') ||
-          errorMsg.includes('Load failed') ||
-          errorMsg.includes('not JSON') ||
-          errorMsg.includes('Unexpected token') ||
-          errorMsg.includes('JSON')
-        ) {
+        if (errorMsg.includes('Failed to fetch') || errorMsg.includes('fetch') || errorMsg.includes('network') || errorMsg.includes('Load failed')) {
           console.warn("Sync server is temporarily offline or restarting, retrying soon...");
         } else {
           console.error("Online poll error:", e);
@@ -702,7 +640,9 @@ export default function App() {
     setRegisteredUsers((prevUsers) => {
       const match = prevUsers.find((u) => u.email.toLowerCase() === wallet.email.toLowerCase());
       if (match) {
-        const hasDiff = !areWalletsEqual(wallet, match);
+        const hasDiff = Object.keys(wallet).some(
+          (key) => (wallet as any)[key] !== (match as any)[key]
+        );
         if (hasDiff) {
           return prevUsers.map((u) =>
             u.email.toLowerCase() === wallet.email.toLowerCase() ? { ...wallet } : u
@@ -717,7 +657,9 @@ export default function App() {
     if (!wallet || !wallet.email || wallet.email.toLowerCase() === 'admin1234@gmail.com') return;
     const match = registeredUsers.find((u) => u.email.toLowerCase() === wallet.email.toLowerCase());
     if (match) {
-      const hasDiff = !areWalletsEqual(wallet, match);
+      const hasDiff = Object.keys(match).some(
+        (key) => (wallet as any)[key] !== (match as any)[key]
+      );
       if (hasDiff) {
         setWallet(match);
       }

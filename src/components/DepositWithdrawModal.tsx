@@ -117,8 +117,15 @@ export default function DepositWithdrawModal({
       const currentHour = simulatedDate.getHours();
       const allowByAdminOrRef = !!(adminApprovalSettings?.allowAnytimeWithdrawal || withdrawSource === 'referral');
       
-      // Let users submit withdrawals anytime, but inform them on the transaction status
-      const isOutsideProcessingWindow = !allowByAdminOrRef && (currentHour < 10 || currentHour >= 12);
+      if (!allowByAdminOrRef && (currentHour < 10 || currentHour >= 12)) {
+        const timeString = simulatedDate.toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          second: '2-digit'
+        });
+        setErrorMessage(`Withdrawal processing window is strictly limited from 10:00 AM to 12:00 PM daily. The current simulated platform time is ${timeString}. Please use the Virtual Time Machine on the Dashboard to leap forward to the 10:00 AM withdrawal hours!`);
+        return false;
+      }
 
       const targetBalance = withdrawSource === 'referral' ? (wallet.referralEarnings || 0) : walletBalance;
       if (amtNum > targetBalance) {
@@ -747,15 +754,6 @@ export default function DepositWithdrawModal({
                   <span className="bg-green-105 text-green-800 border border-green-150 font-black px-2 py-0.5 rounded text-[10px]">COMPLETED</span>
                 )}
               </div>
-              {type === 'withdraw' && (
-                <div className="flex justify-between items-start border-t border-gray-150/60 pt-2.5">
-                  <span className="text-gray-400 font-semibold mt-0.5">Processing Hours:</span>
-                  <div className="text-right">
-                    <span className="text-amber-700 font-bold block">10:00 AM – 12:00 PM</span>
-                    <span className="text-[10px] text-gray-500 block">Payouts approved daily during window</span>
-                  </div>
-                </div>
-              )}
             </div>
 
             <button
